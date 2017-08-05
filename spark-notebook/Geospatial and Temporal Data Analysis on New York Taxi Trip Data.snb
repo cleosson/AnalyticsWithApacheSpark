@@ -1,0 +1,665 @@
+{
+  "metadata" : {
+    "name" : "Geospatial and Temporal Data Analysis on New York Taxi Trip Data",
+    "user_save_timestamp" : "1969-12-31T21:00:00.000Z",
+    "auto_save_timestamp" : "1969-12-31T21:00:00.000Z",
+    "language_info" : {
+      "name" : "scala",
+      "file_extension" : "scala",
+      "codemirror_mode" : "text/x-scala"
+    },
+    "trusted" : true,
+    "customLocalRepo" : "/tmp/repo-test",
+    "customRepos" : null,
+    "customDeps" : [ "org.bdgenomics.adam % adam-apis % 0.16.0", "- org.apache.hadoop % hadoop-client %   _", "+ org.apache.spark  %  spark-mllib_2.10  % 1.2.1" ],
+    "customImports" : [ "import scala.util._", "import org.apache.spark.SparkContext._" ],
+    "customArgs" : null,
+    "customSparkConf" : {
+      "spark.master" : "local[4]"
+    }
+  },
+  "cells" : [ {
+    "metadata" : {
+      "presentation" : {
+        "cell_width" : "12"
+      },
+      "id" : "D7D1B83DA76C4F09B830109A6F9E97DB"
+    },
+    "cell_type" : "markdown",
+    "source" : "###We are going to load the New York Taxi Trip Data for Yellow Cabs from year 2015.  \n\n###For demonstration purposes, we are going to get the data from January 2015.  \n\n###site: http://www.nyc.gov/html/tlc/html/about/trip_record_data.shtml"
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false,
+      "id" : "9DBC12D77CCB46F09AECA307651F56C0"
+    },
+    "cell_type" : "code",
+    "source" : "val taxiRaw = sparkSession.read.option(\"header\", \"true\").\n  csv(\"/Users/cleo/Programming/Spark/analytics/08-geo/data/nyCab/yellow_tripdata_2015-01.csv\").\n  sample(false, 10d)\n",
+    "outputs" : [ {
+      "name" : "stdout",
+      "output_type" : "stream",
+      "text" : "taxiRaw: org.apache.spark.sql.DataFrame = [VendorID: string, tpep_pickup_datetime: string ... 17 more fields]\n"
+    }, {
+      "metadata" : { },
+      "data" : {
+        "text/html" : ""
+      },
+      "output_type" : "execute_result",
+      "execution_count" : 1,
+      "time" : "Took: 15 seconds 192 milliseconds, at 2017-7-22 23:57"
+    } ]
+  }, {
+    "metadata" : {
+      "id" : "7BDA88C83E1542F282C9F24511E90916"
+    },
+    "cell_type" : "markdown",
+    "source" : "###*sparkSession.read.option().csv()* creates a DataFrame.  \n\n###DataFrame is a Dataset[org.apache.spark.sql.Row]\n\n###Let's see the fields that we have here"
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false,
+      "presentation" : {
+        "tabs_state" : "{\n  \"tab_id\": \"#tab342446000-0\"\n}",
+        "pivot_chart_state" : "{\n  \"hiddenAttributes\": [],\n  \"menuLimit\": 200,\n  \"cols\": [],\n  \"rows\": [],\n  \"vals\": [],\n  \"exclusions\": {},\n  \"inclusions\": {},\n  \"unusedAttrsVertical\": 85,\n  \"autoSortUnusedAttrs\": false,\n  \"inclusionsInfo\": {},\n  \"aggregatorName\": \"Count\",\n  \"rendererName\": \"Table\"\n}"
+      },
+      "id" : "F427F010C76C42D2808F508869D18686"
+    },
+    "cell_type" : "code",
+    "source" : "taxiRaw.take(4)",
+    "outputs" : [ {
+      "name" : "stdout",
+      "output_type" : "stream",
+      "text" : "res2: Array[org.apache.spark.sql.Row] = Array([2,2015-01-15 19:05:39,2015-01-15 19:23:42,1,1.59,-73.993896484375,40.750110626220703,1,N,-73.974784851074219,40.750617980957031,1,12,1,0.5,3.25,0,0.3,17.05], [1,2015-01-10 20:33:38,2015-01-10 20:53:28,1,3.30,-74.00164794921875,40.7242431640625,1,N,-73.994415283203125,40.759109497070313,1,14.5,0.5,0.5,2,0,0.3,17.8], [1,2015-01-10 20:33:38,2015-01-10 20:43:41,1,1.80,-73.963340759277344,40.802787780761719,1,N,-73.951820373535156,40.824413299560547,2,9.5,0.5,0.5,0,0,0.3,10.8], [1,2015-01-10 20:33:39,2015-01-10 20:35:31,1,.50,-74.009086608886719,40.713817596435547,1,N,-74.004325866699219,40.719985961914063,2,3.5,0.5,0.5,0,0,0.3,4.8])\n"
+    }, {
+      "metadata" : { },
+      "data" : {
+        "text/html" : "<div>\n      <script data-this=\"{&quot;dataId&quot;:&quot;anonfc069a411f0324f91dd8265728a9640c&quot;,&quot;dataInit&quot;:[],&quot;genId&quot;:&quot;342446000&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/req(['../javascripts/notebook/playground','../javascripts/notebook/magic/tabs'], \n      function(playground, _magictabs) {\n        // data ==> data-this (in observable.js's scopedEval) ==> this in JS => { dataId, dataInit, ... }\n        // this ==> scope (in observable.js's scopedEval) ==> this.parentElement ==> div.container below (toHtml)\n\n        playground.call(data,\n                        this\n                        ,\n                        {\n    \"f\": _magictabs,\n    \"o\": {}\n  }\n  \n                        \n                        \n                      );\n      }\n    );/*]]>*/</script>\n    <div>\n      <div>\n        <ul class=\"nav nav-tabs\" id=\"ul342446000\"><li>\n              <a href=\"#tab342446000-0\"><i class=\"fa fa-table\"/></a>\n            </li><li>\n              <a href=\"#tab342446000-1\"><i class=\"fa fa-cubes\"/></a>\n            </li></ul>\n\n        <div class=\"tab-content\" id=\"tab342446000\"><div class=\"tab-pane\" id=\"tab342446000-0\">\n            <div>\n      <script data-this=\"{&quot;dataId&quot;:&quot;anonde46247238bcee3203f7b192ab10d6d6&quot;,&quot;dataInit&quot;:[{&quot;improvement_surcharge&quot;:&quot;0.3&quot;,&quot;tpep_dropoff_datetime&quot;:&quot;2015-01-15 19:23:42&quot;,&quot;trip_distance&quot;:&quot;1.59&quot;,&quot;dropoff_longitude&quot;:&quot;-73.974784851074219&quot;,&quot;RateCodeID&quot;:&quot;1&quot;,&quot;pickup_latitude&quot;:&quot;40.750110626220703&quot;,&quot;tolls_amount&quot;:&quot;0&quot;,&quot;VendorID&quot;:&quot;2&quot;,&quot;tip_amount&quot;:&quot;3.25&quot;,&quot;payment_type&quot;:&quot;1&quot;,&quot;fare_amount&quot;:&quot;12&quot;,&quot;pickup_longitude&quot;:&quot;-73.993896484375&quot;,&quot;passenger_count&quot;:&quot;1&quot;,&quot;store_and_fwd_flag&quot;:&quot;N&quot;,&quot;extra&quot;:&quot;1&quot;,&quot;total_amount&quot;:&quot;17.05&quot;,&quot;tpep_pickup_datetime&quot;:&quot;2015-01-15 19:05:39&quot;,&quot;dropoff_latitude&quot;:&quot;40.750617980957031&quot;,&quot;mta_tax&quot;:&quot;0.5&quot;},{&quot;improvement_surcharge&quot;:&quot;0.3&quot;,&quot;tpep_dropoff_datetime&quot;:&quot;2015-01-10 20:53:28&quot;,&quot;trip_distance&quot;:&quot;3.30&quot;,&quot;dropoff_longitude&quot;:&quot;-73.994415283203125&quot;,&quot;RateCodeID&quot;:&quot;1&quot;,&quot;pickup_latitude&quot;:&quot;40.7242431640625&quot;,&quot;tolls_amount&quot;:&quot;0&quot;,&quot;VendorID&quot;:&quot;1&quot;,&quot;tip_amount&quot;:&quot;2&quot;,&quot;payment_type&quot;:&quot;1&quot;,&quot;fare_amount&quot;:&quot;14.5&quot;,&quot;pickup_longitude&quot;:&quot;-74.00164794921875&quot;,&quot;passenger_count&quot;:&quot;1&quot;,&quot;store_and_fwd_flag&quot;:&quot;N&quot;,&quot;extra&quot;:&quot;0.5&quot;,&quot;total_amount&quot;:&quot;17.8&quot;,&quot;tpep_pickup_datetime&quot;:&quot;2015-01-10 20:33:38&quot;,&quot;dropoff_latitude&quot;:&quot;40.759109497070313&quot;,&quot;mta_tax&quot;:&quot;0.5&quot;},{&quot;improvement_surcharge&quot;:&quot;0.3&quot;,&quot;tpep_dropoff_datetime&quot;:&quot;2015-01-10 20:43:41&quot;,&quot;trip_distance&quot;:&quot;1.80&quot;,&quot;dropoff_longitude&quot;:&quot;-73.951820373535156&quot;,&quot;RateCodeID&quot;:&quot;1&quot;,&quot;pickup_latitude&quot;:&quot;40.802787780761719&quot;,&quot;tolls_amount&quot;:&quot;0&quot;,&quot;VendorID&quot;:&quot;1&quot;,&quot;tip_amount&quot;:&quot;0&quot;,&quot;payment_type&quot;:&quot;2&quot;,&quot;fare_amount&quot;:&quot;9.5&quot;,&quot;pickup_longitude&quot;:&quot;-73.963340759277344&quot;,&quot;passenger_count&quot;:&quot;1&quot;,&quot;store_and_fwd_flag&quot;:&quot;N&quot;,&quot;extra&quot;:&quot;0.5&quot;,&quot;total_amount&quot;:&quot;10.8&quot;,&quot;tpep_pickup_datetime&quot;:&quot;2015-01-10 20:33:38&quot;,&quot;dropoff_latitude&quot;:&quot;40.824413299560547&quot;,&quot;mta_tax&quot;:&quot;0.5&quot;},{&quot;improvement_surcharge&quot;:&quot;0.3&quot;,&quot;tpep_dropoff_datetime&quot;:&quot;2015-01-10 20:35:31&quot;,&quot;trip_distance&quot;:&quot;.50&quot;,&quot;dropoff_longitude&quot;:&quot;-74.004325866699219&quot;,&quot;RateCodeID&quot;:&quot;1&quot;,&quot;pickup_latitude&quot;:&quot;40.713817596435547&quot;,&quot;tolls_amount&quot;:&quot;0&quot;,&quot;VendorID&quot;:&quot;1&quot;,&quot;tip_amount&quot;:&quot;0&quot;,&quot;payment_type&quot;:&quot;2&quot;,&quot;fare_amount&quot;:&quot;3.5&quot;,&quot;pickup_longitude&quot;:&quot;-74.009086608886719&quot;,&quot;passenger_count&quot;:&quot;1&quot;,&quot;store_and_fwd_flag&quot;:&quot;N&quot;,&quot;extra&quot;:&quot;0.5&quot;,&quot;total_amount&quot;:&quot;4.8&quot;,&quot;tpep_pickup_datetime&quot;:&quot;2015-01-10 20:33:39&quot;,&quot;dropoff_latitude&quot;:&quot;40.719985961914063&quot;,&quot;mta_tax&quot;:&quot;0.5&quot;}],&quot;genId&quot;:&quot;509344621&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/req(['../javascripts/notebook/playground','../javascripts/notebook/magic/tableChart'], \n      function(playground, _magictableChart) {\n        // data ==> data-this (in observable.js's scopedEval) ==> this in JS => { dataId, dataInit, ... }\n        // this ==> scope (in observable.js's scopedEval) ==> this.parentElement ==> div.container below (toHtml)\n\n        playground.call(data,\n                        this\n                        ,\n                        {\n    \"f\": _magictableChart,\n    \"o\": {\"headers\":[\"VendorID\",\"tpep_pickup_datetime\",\"tpep_dropoff_datetime\",\"passenger_count\",\"trip_distance\",\"pickup_longitude\",\"pickup_latitude\",\"RateCodeID\",\"store_and_fwd_flag\",\"dropoff_longitude\",\"dropoff_latitude\",\"payment_type\",\"fare_amount\",\"extra\",\"mta_tax\",\"tip_amount\",\"tolls_amount\",\"improvement_surcharge\",\"total_amount\"],\"width\":600,\"height\":400}\n  }\n  \n                        \n                        \n                      );\n      }\n    );/*]]>*/</script>\n    <div>\n      <span class=\"chart-total-item-count\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anonf22676e6b96cfead0ff9eee5992cf759&quot;,&quot;initialValue&quot;:&quot;4&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p> entries total</span>\n      <span class=\"chart-sampling-warning\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anon0ab1a9f918eccc3c223130c3eff13a13&quot;,&quot;initialValue&quot;:&quot;&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p></span>\n      <div>\n      </div>\n    </div></div>\n            </div><div class=\"tab-pane\" id=\"tab342446000-1\">\n            <div>\n      <script data-this=\"{&quot;dataId&quot;:&quot;anon855fedf8bcb893257c3aa0b26d1fb0ab&quot;,&quot;dataInit&quot;:[{&quot;improvement_surcharge&quot;:&quot;0.3&quot;,&quot;tpep_dropoff_datetime&quot;:&quot;2015-01-15 19:23:42&quot;,&quot;trip_distance&quot;:&quot;1.59&quot;,&quot;dropoff_longitude&quot;:&quot;-73.974784851074219&quot;,&quot;RateCodeID&quot;:&quot;1&quot;,&quot;pickup_latitude&quot;:&quot;40.750110626220703&quot;,&quot;tolls_amount&quot;:&quot;0&quot;,&quot;VendorID&quot;:&quot;2&quot;,&quot;tip_amount&quot;:&quot;3.25&quot;,&quot;payment_type&quot;:&quot;1&quot;,&quot;fare_amount&quot;:&quot;12&quot;,&quot;pickup_longitude&quot;:&quot;-73.993896484375&quot;,&quot;passenger_count&quot;:&quot;1&quot;,&quot;store_and_fwd_flag&quot;:&quot;N&quot;,&quot;extra&quot;:&quot;1&quot;,&quot;total_amount&quot;:&quot;17.05&quot;,&quot;tpep_pickup_datetime&quot;:&quot;2015-01-15 19:05:39&quot;,&quot;dropoff_latitude&quot;:&quot;40.750617980957031&quot;,&quot;mta_tax&quot;:&quot;0.5&quot;},{&quot;improvement_surcharge&quot;:&quot;0.3&quot;,&quot;tpep_dropoff_datetime&quot;:&quot;2015-01-10 20:53:28&quot;,&quot;trip_distance&quot;:&quot;3.30&quot;,&quot;dropoff_longitude&quot;:&quot;-73.994415283203125&quot;,&quot;RateCodeID&quot;:&quot;1&quot;,&quot;pickup_latitude&quot;:&quot;40.7242431640625&quot;,&quot;tolls_amount&quot;:&quot;0&quot;,&quot;VendorID&quot;:&quot;1&quot;,&quot;tip_amount&quot;:&quot;2&quot;,&quot;payment_type&quot;:&quot;1&quot;,&quot;fare_amount&quot;:&quot;14.5&quot;,&quot;pickup_longitude&quot;:&quot;-74.00164794921875&quot;,&quot;passenger_count&quot;:&quot;1&quot;,&quot;store_and_fwd_flag&quot;:&quot;N&quot;,&quot;extra&quot;:&quot;0.5&quot;,&quot;total_amount&quot;:&quot;17.8&quot;,&quot;tpep_pickup_datetime&quot;:&quot;2015-01-10 20:33:38&quot;,&quot;dropoff_latitude&quot;:&quot;40.759109497070313&quot;,&quot;mta_tax&quot;:&quot;0.5&quot;},{&quot;improvement_surcharge&quot;:&quot;0.3&quot;,&quot;tpep_dropoff_datetime&quot;:&quot;2015-01-10 20:43:41&quot;,&quot;trip_distance&quot;:&quot;1.80&quot;,&quot;dropoff_longitude&quot;:&quot;-73.951820373535156&quot;,&quot;RateCodeID&quot;:&quot;1&quot;,&quot;pickup_latitude&quot;:&quot;40.802787780761719&quot;,&quot;tolls_amount&quot;:&quot;0&quot;,&quot;VendorID&quot;:&quot;1&quot;,&quot;tip_amount&quot;:&quot;0&quot;,&quot;payment_type&quot;:&quot;2&quot;,&quot;fare_amount&quot;:&quot;9.5&quot;,&quot;pickup_longitude&quot;:&quot;-73.963340759277344&quot;,&quot;passenger_count&quot;:&quot;1&quot;,&quot;store_and_fwd_flag&quot;:&quot;N&quot;,&quot;extra&quot;:&quot;0.5&quot;,&quot;total_amount&quot;:&quot;10.8&quot;,&quot;tpep_pickup_datetime&quot;:&quot;2015-01-10 20:33:38&quot;,&quot;dropoff_latitude&quot;:&quot;40.824413299560547&quot;,&quot;mta_tax&quot;:&quot;0.5&quot;},{&quot;improvement_surcharge&quot;:&quot;0.3&quot;,&quot;tpep_dropoff_datetime&quot;:&quot;2015-01-10 20:35:31&quot;,&quot;trip_distance&quot;:&quot;.50&quot;,&quot;dropoff_longitude&quot;:&quot;-74.004325866699219&quot;,&quot;RateCodeID&quot;:&quot;1&quot;,&quot;pickup_latitude&quot;:&quot;40.713817596435547&quot;,&quot;tolls_amount&quot;:&quot;0&quot;,&quot;VendorID&quot;:&quot;1&quot;,&quot;tip_amount&quot;:&quot;0&quot;,&quot;payment_type&quot;:&quot;2&quot;,&quot;fare_amount&quot;:&quot;3.5&quot;,&quot;pickup_longitude&quot;:&quot;-74.009086608886719&quot;,&quot;passenger_count&quot;:&quot;1&quot;,&quot;store_and_fwd_flag&quot;:&quot;N&quot;,&quot;extra&quot;:&quot;0.5&quot;,&quot;total_amount&quot;:&quot;4.8&quot;,&quot;tpep_pickup_datetime&quot;:&quot;2015-01-10 20:33:39&quot;,&quot;dropoff_latitude&quot;:&quot;40.719985961914063&quot;,&quot;mta_tax&quot;:&quot;0.5&quot;}],&quot;genId&quot;:&quot;168720984&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/req(['../javascripts/notebook/playground','../javascripts/notebook/magic/pivotChart'], \n      function(playground, _magicpivotChart) {\n        // data ==> data-this (in observable.js's scopedEval) ==> this in JS => { dataId, dataInit, ... }\n        // this ==> scope (in observable.js's scopedEval) ==> this.parentElement ==> div.container below (toHtml)\n\n        playground.call(data,\n                        this\n                        ,\n                        {\n    \"f\": _magicpivotChart,\n    \"o\": {\"width\":600,\"height\":400,\"derivedAttributes\":{},\"extraOptions\":{}}\n  }\n  \n                        \n                        \n                      );\n      }\n    );/*]]>*/</script>\n    <div>\n      <span class=\"chart-total-item-count\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anon613d740264f43c7221925e13c1117dbf&quot;,&quot;initialValue&quot;:&quot;4&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p> entries total</span>\n      <span class=\"chart-sampling-warning\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anon6f0c2da3c50ed57a633fb1147008b89d&quot;,&quot;initialValue&quot;:&quot;&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p></span>\n      <div>\n      </div>\n    </div></div>\n            </div></div>\n      </div>\n    </div></div>"
+      },
+      "output_type" : "execute_result",
+      "execution_count" : 2,
+      "time" : "Took: 13 seconds 514 milliseconds, at 2017-7-22 23:57"
+    } ]
+  }, {
+    "metadata" : {
+      "id" : "204D36B1437F46BB862D2F5349314C22"
+    },
+    "cell_type" : "markdown",
+    "source" : "###We can see the dictionary of the data here http://www.nyc.gov/html/tlc/downloads/pdf/data_dictionary_trip_records_yellow.pdf\n\n###The important fileds for us are:  \n\n| Field  | Description  |\n| ------ | ------------ |\n|tpep_pickup_datetime | The date and time when the meter was engaged |\n|tpep_dropoff_datetime | The date and time when the meter was disengaged |\n|passenger_count | The number of passengers in the vehicle |\n|trip_distance | The elapsed trip distance in miles reported by the taximeter |\n|pickup_longitude | Longitude where the meter was engaged |\n|pickup_latitude | Latitude where the meter was engaged |\n|dropoff_longitude | Longitude where the meter was disengaged |\n|dropoff_latitude | Latitude where the meter was disengaged |\n|fare_amount | The time-and-distance fare calculated by the meter |\n|total_amount | The total amount charged to passengers. Does not include cash tips |\n\n###Now, we need to convert from *Dataset[org.apache.spark.sql.Row]* to *Dataset[our class]*\n\n###We are going to create our class named *Trip* to store the fields that we need  \n"
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false,
+      "id" : "7E38AAFF21ED499DACE305653681A3D8"
+    },
+    "cell_type" : "code",
+    "source" : "case class Trip(\n  pickupTime: Long,\n  dropoffTime: Long,\n  passengerCount: Int,\n  tripDistance: Double,\n  pickupX: Double,\n  pickupY: Double,\n  dropoffX: Double,\n  dropoffY: Double,\n  totalAmount: Double\n)",
+    "outputs" : [ {
+      "name" : "stdout",
+      "output_type" : "stream",
+      "text" : "defined class Trip\n"
+    }, {
+      "metadata" : { },
+      "data" : {
+        "text/html" : ""
+      },
+      "output_type" : "execute_result",
+      "execution_count" : 3,
+      "time" : "Took: 3 seconds 566 milliseconds, at 2017-7-22 23:57"
+    } ]
+  }, {
+    "metadata" : {
+      "id" : "5BC9B6CAC4D34D6283651B56F1C78E49"
+    },
+    "cell_type" : "markdown",
+    "source" : "###In class [Row](https://spark.apache.org/docs/2.2.0/api/java/org/apache/spark/sql/Row.html), we have the method *Row:fieldIndex(String)* that returns the index of a given field name.\n\n###We are going to use *Row:fieldIndex(String)* to get the fields we want to.\n"
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false,
+      "id" : "506117D725604E368E98BA68A2A36AE9"
+    },
+    "cell_type" : "code",
+    "source" : "import org.apache.spark.sql.Row\n\nclass RichRow(row: Row) {\n  def getAs[T](field: String): Option[T] = {\n    if (row.isNullAt(row.fieldIndex(field))) {\n      None\n    } else {\n      Some(row.getAs[T](field))\n    }\n  }\n}",
+    "outputs" : [ {
+      "name" : "stdout",
+      "output_type" : "stream",
+      "text" : "import org.apache.spark.sql.Row\ndefined class RichRow\n"
+    }, {
+      "metadata" : { },
+      "data" : {
+        "text/html" : ""
+      },
+      "output_type" : "execute_result",
+      "execution_count" : 4,
+      "time" : "Took: 2 seconds 887 milliseconds, at 2017-7-22 23:57"
+    } ]
+  }, {
+    "metadata" : {
+      "id" : "06931020AFB541289FFD8834999955BC"
+    },
+    "cell_type" : "markdown",
+    "source" : "###We have date/time fields: *tpep_pickup_datetime* and *tpep_dropoff_datetime*\n\n###We need a function to convert it from String \"yyyy-MM-dd HH:mm:ss\" to Long unix epoch milliseconds "
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false,
+      "id" : "F9851B6626914E03878BF8F6F92B29D7"
+    },
+    "cell_type" : "code",
+    "source" : "import java.text.SimpleDateFormat\nimport java.util.Locale\n\ndef stringToUnixEpochMilliseconds(rr: RichRow, timeField: String): Long = {\n    val formatter = new SimpleDateFormat(\"yyyy-MM-dd HH:mm:ss\", Locale.ENGLISH)\n    val optDt = rr.getAs[String](timeField) \n    optDt.map(dt => formatter.parse(dt).getTime).getOrElse(0L)\n}",
+    "outputs" : [ {
+      "name" : "stdout",
+      "output_type" : "stream",
+      "text" : "import java.text.SimpleDateFormat\nimport java.util.Locale\nstringToUnixEpochMilliseconds: (rr: RichRow, timeField: String)Long\n"
+    }, {
+      "metadata" : { },
+      "data" : {
+        "text/html" : ""
+      },
+      "output_type" : "execute_result",
+      "execution_count" : 5,
+      "time" : "Took: 4 seconds 480 milliseconds, at 2017-7-22 23:57"
+    } ]
+  }, {
+    "metadata" : {
+      "id" : "29E2B3DE0EF74FCA9F2CCD95D2D9165F"
+    },
+    "cell_type" : "markdown",
+    "source" : "###We have some fields that need to be converted from String to Double.\n\n###We need a function for that."
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false,
+      "id" : "8B0AB64EC3B247E9871876B2A8E3965A"
+    },
+    "cell_type" : "code",
+    "source" : "def stringToDouble(rr: RichRow, locField: String): Double = {\n  rr.getAs[String](locField).map(_.toDouble).getOrElse(0.0)\n}",
+    "outputs" : [ {
+      "name" : "stdout",
+      "output_type" : "stream",
+      "text" : "stringToDouble: (rr: RichRow, locField: String)Double\n"
+    }, {
+      "metadata" : { },
+      "data" : {
+        "text/html" : ""
+      },
+      "output_type" : "execute_result",
+      "execution_count" : 6,
+      "time" : "Took: 4 seconds 161 milliseconds, at 2017-7-22 23:57"
+    } ]
+  }, {
+    "metadata" : {
+      "id" : "70ED721356AE42B7B542691DDB349034"
+    },
+    "cell_type" : "markdown",
+    "source" : "###We have some fields that need to be converted from String to Int.\n\n###We need a function for that."
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false,
+      "id" : "EB69CD6B04224F9E863FC9EB2579A037"
+    },
+    "cell_type" : "code",
+    "source" : "def stringToInt(rr: RichRow, locField: String): Int = {\n  rr.getAs[String](locField).map(_.toInt).getOrElse(0)\n}",
+    "outputs" : [ {
+      "name" : "stdout",
+      "output_type" : "stream",
+      "text" : "stringToInt: (rr: RichRow, locField: String)Int\n"
+    }, {
+      "metadata" : { },
+      "data" : {
+        "text/html" : ""
+      },
+      "output_type" : "execute_result",
+      "execution_count" : 7,
+      "time" : "Took: 3 seconds 460 milliseconds, at 2017-7-22 23:57"
+    } ]
+  }, {
+    "metadata" : {
+      "id" : "70321277459643FB80D0C3B023C3B103"
+    },
+    "cell_type" : "markdown",
+    "source" : "###Using the functions *stringToUnixEpochMilliseconds*, *stringToInt* and *stringToDouble* we are going to create a function to convert each row of the DataFrame to our Trip object."
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false,
+      "id" : "221F9D6D7ED54F29B8670DC1BF946B11"
+    },
+    "cell_type" : "code",
+    "source" : "def parse(row: Row): Trip = {\n  val rr = new RichRow(row)\n  Trip(\n    pickupTime = stringToUnixEpochMilliseconds(rr, \"tpep_pickup_datetime\"),\n    dropoffTime = stringToUnixEpochMilliseconds(rr, \"tpep_dropoff_datetime\"),\n    passengerCount = stringToInt(rr, \"passenger_count\"),\n    tripDistance = stringToDouble(rr, \"trip_distance\"),\n    pickupX = stringToDouble(rr, \"pickup_longitude\"),\n    pickupY = stringToDouble(rr, \"pickup_latitude\"),\n    dropoffX = stringToDouble(rr, \"dropoff_longitude\"),\n    dropoffY = stringToDouble(rr, \"dropoff_latitude\"),\n    totalAmount = stringToDouble(rr, \"total_amount\")\n  )\n}\n",
+    "outputs" : [ {
+      "name" : "stdout",
+      "output_type" : "stream",
+      "text" : "parse: (row: org.apache.spark.sql.Row)Trip\n"
+    }, {
+      "metadata" : { },
+      "data" : {
+        "text/html" : ""
+      },
+      "output_type" : "execute_result",
+      "execution_count" : 8,
+      "time" : "Took: 3 seconds 756 milliseconds, at 2017-7-22 23:57"
+    } ]
+  }, {
+    "metadata" : {
+      "id" : "CA2BBF6B71424212821FFCE1A1AF3020"
+    },
+    "cell_type" : "markdown",
+    "source" : "###Let's test our function on a sample of our data."
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false,
+      "presentation" : {
+        "tabs_state" : "{\n  \"tab_id\": \"#tab95735630-0\"\n}",
+        "pivot_chart_state" : "{\n  \"hiddenAttributes\": [],\n  \"menuLimit\": 200,\n  \"cols\": [],\n  \"rows\": [],\n  \"vals\": [],\n  \"exclusions\": {},\n  \"inclusions\": {},\n  \"unusedAttrsVertical\": 85,\n  \"autoSortUnusedAttrs\": false,\n  \"inclusionsInfo\": {},\n  \"aggregatorName\": \"Count\",\n  \"rendererName\": \"Table\"\n}"
+      },
+      "id" : "B8477139277F45568891F9E2473E4C6A"
+    },
+    "cell_type" : "code",
+    "source" : "val taxiRawSample = taxiRaw.sample(false, 0.0001d)\nval taxiRawSampleTrip = taxiRawSample.map(parse)\ntaxiRawSampleTrip.take(4)",
+    "outputs" : [ {
+      "name" : "stdout",
+      "output_type" : "stream",
+      "text" : "taxiRawSample: org.apache.spark.sql.Dataset[org.apache.spark.sql.Row] = [VendorID: string, tpep_pickup_datetime: string ... 17 more fields]\ntaxiRawSampleTrip: org.apache.spark.sql.Dataset[Trip] = [pickupTime: bigint, dropoffTime: bigint ... 7 more fields]\nres10: Array[Trip] = Array(Trip(1421558751000,1421559745000,1,8.51,-74.00017547607422,40.742801666259766,-73.93919372558594,40.84171676635742,32.68), Trip(1421363457000,1421363714000,1,0.55,-73.99987030029297,40.74340057373047,-73.994873046875,40.75027847290039,6.3), Trip(1420167499000,1420167673000,1,0.83,-73.98680114746094,40.75114822387695,-73.99520111083984,40.744850158691406,6.8), Trip(1421670473000,1421670792000,1,1.55,-73.96575927734375,40.75434875488281,-73.9510498046875,40.771690368652344,8.3))\n"
+    }, {
+      "metadata" : { },
+      "data" : {
+        "text/html" : "<div>\n      <script data-this=\"{&quot;dataId&quot;:&quot;anon00a834281c442ff81c87befeb7d8038b&quot;,&quot;dataInit&quot;:[],&quot;genId&quot;:&quot;95735630&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/req(['../javascripts/notebook/playground','../javascripts/notebook/magic/tabs'], \n      function(playground, _magictabs) {\n        // data ==> data-this (in observable.js's scopedEval) ==> this in JS => { dataId, dataInit, ... }\n        // this ==> scope (in observable.js's scopedEval) ==> this.parentElement ==> div.container below (toHtml)\n\n        playground.call(data,\n                        this\n                        ,\n                        {\n    \"f\": _magictabs,\n    \"o\": {}\n  }\n  \n                        \n                        \n                      );\n      }\n    );/*]]>*/</script>\n    <div>\n      <div>\n        <ul class=\"nav nav-tabs\" id=\"ul95735630\"><li>\n              <a href=\"#tab95735630-0\"><i class=\"fa fa-table\"/></a>\n            </li><li>\n              <a href=\"#tab95735630-1\"><i class=\"fa fa-cubes\"/></a>\n            </li></ul>\n\n        <div class=\"tab-content\" id=\"tab95735630\"><div class=\"tab-pane\" id=\"tab95735630-0\">\n            <div>\n      <script data-this=\"{&quot;dataId&quot;:&quot;anon9ba3a6a80e82a8854f1dd1659b4e53bb&quot;,&quot;dataInit&quot;:[{&quot;passengerCount&quot;:1,&quot;pickupTime&quot;:1421558751000,&quot;pickupX&quot;:-74.00017547607422,&quot;tripDistance&quot;:8.51,&quot;dropoffTime&quot;:1421559745000,&quot;totalAmount&quot;:32.68,&quot;dropoffY&quot;:40.84171676635742,&quot;dropoffX&quot;:-73.93919372558594,&quot;pickupY&quot;:40.742801666259766},{&quot;passengerCount&quot;:1,&quot;pickupTime&quot;:1421363457000,&quot;pickupX&quot;:-73.99987030029297,&quot;tripDistance&quot;:0.55,&quot;dropoffTime&quot;:1421363714000,&quot;totalAmount&quot;:6.3,&quot;dropoffY&quot;:40.75027847290039,&quot;dropoffX&quot;:-73.994873046875,&quot;pickupY&quot;:40.74340057373047},{&quot;passengerCount&quot;:1,&quot;pickupTime&quot;:1420167499000,&quot;pickupX&quot;:-73.98680114746094,&quot;tripDistance&quot;:0.83,&quot;dropoffTime&quot;:1420167673000,&quot;totalAmount&quot;:6.8,&quot;dropoffY&quot;:40.744850158691406,&quot;dropoffX&quot;:-73.99520111083984,&quot;pickupY&quot;:40.75114822387695},{&quot;passengerCount&quot;:1,&quot;pickupTime&quot;:1421670473000,&quot;pickupX&quot;:-73.96575927734375,&quot;tripDistance&quot;:1.55,&quot;dropoffTime&quot;:1421670792000,&quot;totalAmount&quot;:8.3,&quot;dropoffY&quot;:40.771690368652344,&quot;dropoffX&quot;:-73.9510498046875,&quot;pickupY&quot;:40.75434875488281}],&quot;genId&quot;:&quot;191412473&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/req(['../javascripts/notebook/playground','../javascripts/notebook/magic/tableChart'], \n      function(playground, _magictableChart) {\n        // data ==> data-this (in observable.js's scopedEval) ==> this in JS => { dataId, dataInit, ... }\n        // this ==> scope (in observable.js's scopedEval) ==> this.parentElement ==> div.container below (toHtml)\n\n        playground.call(data,\n                        this\n                        ,\n                        {\n    \"f\": _magictableChart,\n    \"o\": {\"headers\":[\"pickupTime\",\"dropoffTime\",\"passengerCount\",\"tripDistance\",\"pickupX\",\"pickupY\",\"dropoffX\",\"dropoffY\",\"totalAmount\"],\"width\":600,\"height\":400}\n  }\n  \n                        \n                        \n                      );\n      }\n    );/*]]>*/</script>\n    <div>\n      <span class=\"chart-total-item-count\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anon6f1d596d9e837bcc8f4264858c32fd6b&quot;,&quot;initialValue&quot;:&quot;4&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p> entries total</span>\n      <span class=\"chart-sampling-warning\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anon20664ed74b15700007596fd5d1e1869c&quot;,&quot;initialValue&quot;:&quot;&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p></span>\n      <div>\n      </div>\n    </div></div>\n            </div><div class=\"tab-pane\" id=\"tab95735630-1\">\n            <div>\n      <script data-this=\"{&quot;dataId&quot;:&quot;anone23b9ef56ccdb69f55680ad3c17669a4&quot;,&quot;dataInit&quot;:[{&quot;passengerCount&quot;:1,&quot;pickupTime&quot;:1421558751000,&quot;pickupX&quot;:-74.00017547607422,&quot;tripDistance&quot;:8.51,&quot;dropoffTime&quot;:1421559745000,&quot;totalAmount&quot;:32.68,&quot;dropoffY&quot;:40.84171676635742,&quot;dropoffX&quot;:-73.93919372558594,&quot;pickupY&quot;:40.742801666259766},{&quot;passengerCount&quot;:1,&quot;pickupTime&quot;:1421363457000,&quot;pickupX&quot;:-73.99987030029297,&quot;tripDistance&quot;:0.55,&quot;dropoffTime&quot;:1421363714000,&quot;totalAmount&quot;:6.3,&quot;dropoffY&quot;:40.75027847290039,&quot;dropoffX&quot;:-73.994873046875,&quot;pickupY&quot;:40.74340057373047},{&quot;passengerCount&quot;:1,&quot;pickupTime&quot;:1420167499000,&quot;pickupX&quot;:-73.98680114746094,&quot;tripDistance&quot;:0.83,&quot;dropoffTime&quot;:1420167673000,&quot;totalAmount&quot;:6.8,&quot;dropoffY&quot;:40.744850158691406,&quot;dropoffX&quot;:-73.99520111083984,&quot;pickupY&quot;:40.75114822387695},{&quot;passengerCount&quot;:1,&quot;pickupTime&quot;:1421670473000,&quot;pickupX&quot;:-73.96575927734375,&quot;tripDistance&quot;:1.55,&quot;dropoffTime&quot;:1421670792000,&quot;totalAmount&quot;:8.3,&quot;dropoffY&quot;:40.771690368652344,&quot;dropoffX&quot;:-73.9510498046875,&quot;pickupY&quot;:40.75434875488281}],&quot;genId&quot;:&quot;342555346&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/req(['../javascripts/notebook/playground','../javascripts/notebook/magic/pivotChart'], \n      function(playground, _magicpivotChart) {\n        // data ==> data-this (in observable.js's scopedEval) ==> this in JS => { dataId, dataInit, ... }\n        // this ==> scope (in observable.js's scopedEval) ==> this.parentElement ==> div.container below (toHtml)\n\n        playground.call(data,\n                        this\n                        ,\n                        {\n    \"f\": _magicpivotChart,\n    \"o\": {\"width\":600,\"height\":400,\"derivedAttributes\":{},\"extraOptions\":{}}\n  }\n  \n                        \n                        \n                      );\n      }\n    );/*]]>*/</script>\n    <div>\n      <span class=\"chart-total-item-count\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anonff11486d34dd4b7702dfcc9e44934cfb&quot;,&quot;initialValue&quot;:&quot;4&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p> entries total</span>\n      <span class=\"chart-sampling-warning\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anonc21e1a5457d3f7d86f170541b5b280d5&quot;,&quot;initialValue&quot;:&quot;&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p></span>\n      <div>\n      </div>\n    </div></div>\n            </div></div>\n      </div>\n    </div></div>"
+      },
+      "output_type" : "execute_result",
+      "execution_count" : 9,
+      "time" : "Took: 24 seconds 187 milliseconds, at 2017-7-22 23:58"
+    } ]
+  }, {
+    "metadata" : {
+      "id" : "155E684D65CC4221A7A2EA99015D8958"
+    },
+    "cell_type" : "markdown",
+    "source" : "###As you can see, taxiRawSample is *Dataset[Row]*.  \n\n###After your transformation, taxiRawSampleTrip is *Dataset[Trip]*.\n  \n  "
+  }, {
+    "metadata" : {
+      "id" : "DE07218FD86E4E4C9E1F22722948D7DD"
+    },
+    "cell_type" : "markdown",
+    "source" : "###In a big dataset, we need to handle invalid records.\n\n###It will either parse the record successfully and return meaningful output, or it will fail and throw an exception, in which case we want to capture both the value of the invalid record and the exception that was thrown. \n\n###Whenever an operation has two mutually exclusive outcomes, we can use Scala’s Either[L, R] type to represent the return type of the operation. \n\n###For us, the “left” outcome is the successfully parsed record and the “right” outcome is a tuple of the exception we hit and the input record that caused it."
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false,
+      "id" : "F08CBDB1C1D543B887766B26522B09D5"
+    },
+    "cell_type" : "code",
+    "source" : "def safe[S, T](f: S => T): S => Either[T, (S, Exception)] = {\n  new Function[S, Either[T, (S, Exception)]] with Serializable {\n    def apply(s: S): Either[T, (S, Exception)] = {\n      try {\n        Left(f(s))\n      } catch {\n        case e: Exception => Right((s, e))\n      }\n    }\n  }\n}",
+    "outputs" : [ {
+      "name" : "stdout",
+      "output_type" : "stream",
+      "text" : "safe: [S, T](f: S => T)S => scala.util.Either[T,(S, Exception)]\n"
+    }, {
+      "metadata" : { },
+      "data" : {
+        "text/html" : ""
+      },
+      "output_type" : "execute_result",
+      "execution_count" : 10,
+      "time" : "Took: 2 seconds 987 milliseconds, at 2017-7-22 23:58"
+    } ]
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false,
+      "id" : "9279EF865911429CB1B636537F3A4B9D"
+    },
+    "cell_type" : "code",
+    "source" : "val safeParse = safe(parse)\nval taxiParsed = taxiRaw.rdd.map(safeParse)",
+    "outputs" : [ {
+      "name" : "stdout",
+      "output_type" : "stream",
+      "text" : "safeParse: org.apache.spark.sql.Row => scala.util.Either[Trip,(org.apache.spark.sql.Row, Exception)] = <function1>\ntaxiParsed: org.apache.spark.rdd.RDD[scala.util.Either[Trip,(org.apache.spark.sql.Row, Exception)]] = MapPartitionsRDD[17] at map at <console>:92\n"
+    }, {
+      "metadata" : { },
+      "data" : {
+        "text/html" : ""
+      },
+      "output_type" : "execute_result",
+      "execution_count" : 11,
+      "time" : "Took: 4 seconds 639 milliseconds, at 2017-7-22 23:58"
+    } ]
+  }, {
+    "metadata" : {
+      "id" : "21F3D44598024E0283352818EF91D5E4"
+    },
+    "cell_type" : "markdown",
+    "source" : "###Let's count how many successes and failures we have.\n\n###*true* means success and *false* means failure"
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false,
+      "id" : "88A7C6404E1346C18F9C170CF26DB5F5"
+    },
+    "cell_type" : "code",
+    "source" : "taxiParsed.map(_.isLeft).countByValue().foreach(println)",
+    "outputs" : [ {
+      "name" : "stdout",
+      "output_type" : "stream",
+      "text" : "(true,12748986)\n"
+    }, {
+      "metadata" : { },
+      "data" : {
+        "text/html" : ""
+      },
+      "output_type" : "execute_result",
+      "execution_count" : 12,
+      "time" : "Took: 4 minutes 53 seconds 920 milliseconds, at 2017-7-23 0:3"
+    } ]
+  }, {
+    "metadata" : {
+      "id" : "651ABF542C814A6AAA7B70032496A6B1"
+    },
+    "cell_type" : "markdown",
+    "source" : "###Great!!! \n\n###What luck!!! none of the records threw exceptions during parsing!\n\n###Let's parse everything and cache it"
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false,
+      "id" : "BB9D10004B3E442183C9D51E1F01B625"
+    },
+    "cell_type" : "code",
+    "source" : "val taxiGood = taxiParsed.map(_.left.get).toDS\ntaxiGood.cache()",
+    "outputs" : [ {
+      "name" : "stdout",
+      "output_type" : "stream",
+      "text" : "taxiGood: org.apache.spark.sql.Dataset[Trip] = [pickupTime: bigint, dropoffTime: bigint ... 7 more fields]\nres16: taxiGood.type = [pickupTime: bigint, dropoffTime: bigint ... 7 more fields]\n"
+    }, {
+      "metadata" : { },
+      "data" : {
+        "text/html" : "<div class=\"df-canvas\">\n      <script data-this=\"{&quot;dataId&quot;:&quot;anon2c4406fcbe36d58ee66255fb49c3ad80&quot;,&quot;partitionIndexId&quot;:&quot;anon03c8b749c262fa075580d96ec1ddc6d1&quot;,&quot;numPartitions&quot;:509960,&quot;dfSchema&quot;:{&quot;type&quot;:&quot;struct&quot;,&quot;fields&quot;:[{&quot;name&quot;:&quot;pickupTime&quot;,&quot;type&quot;:&quot;long&quot;,&quot;nullable&quot;:true,&quot;metadata&quot;:{}},{&quot;name&quot;:&quot;dropoffTime&quot;,&quot;type&quot;:&quot;long&quot;,&quot;nullable&quot;:true,&quot;metadata&quot;:{}},{&quot;name&quot;:&quot;passengerCount&quot;,&quot;type&quot;:&quot;integer&quot;,&quot;nullable&quot;:true,&quot;metadata&quot;:{}},{&quot;name&quot;:&quot;tripDistance&quot;,&quot;type&quot;:&quot;double&quot;,&quot;nullable&quot;:true,&quot;metadata&quot;:{}},{&quot;name&quot;:&quot;pickupX&quot;,&quot;type&quot;:&quot;double&quot;,&quot;nullable&quot;:true,&quot;metadata&quot;:{}},{&quot;name&quot;:&quot;pickupY&quot;,&quot;type&quot;:&quot;double&quot;,&quot;nullable&quot;:true,&quot;metadata&quot;:{}},{&quot;name&quot;:&quot;dropoffX&quot;,&quot;type&quot;:&quot;double&quot;,&quot;nullable&quot;:true,&quot;metadata&quot;:{}},{&quot;name&quot;:&quot;dropoffY&quot;,&quot;type&quot;:&quot;double&quot;,&quot;nullable&quot;:true,&quot;metadata&quot;:{}},{&quot;name&quot;:&quot;totalAmount&quot;,&quot;type&quot;:&quot;double&quot;,&quot;nullable&quot;:true,&quot;metadata&quot;:{}}]}}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/req(['../javascripts/notebook/dataframe','../javascripts/notebook/consoleDir'], \n      function(dataframe, extension) {\n        dataframe.call(data, this, extension);\n      }\n    );/*]]>*/</script>\n      <link rel=\"stylesheet\" href=\"/assets/stylesheets/ipython/css/dataframe.css\" type=\"text/css\"/>\n    </div>"
+      },
+      "output_type" : "execute_result",
+      "execution_count" : 13,
+      "time" : "Took: 6 minutes 36 seconds 495 milliseconds, at 2017-7-23 0:9"
+    } ]
+  }, {
+    "metadata" : {
+      "id" : "E3862AA1000C42248BCCC70F26D68528"
+    },
+    "cell_type" : "markdown",
+    "source" : "###We can expect is that the dropoff time > pickup time.\n\n### We might also expect that trips will not take more than a few hours to complete, although it’s certainly possible that long trips, trips that take place during rush hour, or trips that are delayed by accidents could go on for several hours. \n\n###Let's define a helper function to check that dropoff time > pickup time and how many hours a trip takes"
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false,
+      "id" : "999A8ED581074CE8A0934B9C87E02E5E"
+    },
+    "cell_type" : "code",
+    "source" : "import java.util.concurrent.TimeUnit\n\nval hours = (pickup: Long, dropoff: Long) => {\n  TimeUnit.HOURS.convert(dropoff - pickup, TimeUnit.MILLISECONDS)\n}",
+    "outputs" : [ {
+      "name" : "stdout",
+      "output_type" : "stream",
+      "text" : "import java.util.concurrent.TimeUnit\nhours: (Long, Long) => Long = <function2>\n"
+    }, {
+      "metadata" : { },
+      "data" : {
+        "text/html" : ""
+      },
+      "output_type" : "execute_result",
+      "execution_count" : 14,
+      "time" : "Took: 2 seconds 611 milliseconds, at 2017-7-23 0:9"
+    } ]
+  }, {
+    "metadata" : {
+      "id" : "B66353DD45184FEF8CFE6456D4D51D1D"
+    },
+    "cell_type" : "markdown",
+    "source" : "###Let's test the function"
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false,
+      "id" : "E76706448230401DA8A2B353E98A2434"
+    },
+    "cell_type" : "code",
+    "source" : "hours(1,0)",
+    "outputs" : [ {
+      "name" : "stdout",
+      "output_type" : "stream",
+      "text" : "res19: Long = 0\n"
+    }, {
+      "metadata" : { },
+      "data" : {
+        "text/html" : "0"
+      },
+      "output_type" : "execute_result",
+      "execution_count" : 15,
+      "time" : "Took: 3 seconds 775 milliseconds, at 2017-7-23 0:9"
+    } ]
+  }, {
+    "metadata" : {
+      "id" : "E7773331E79F44A8B5C6B6FDB4882E08"
+    },
+    "cell_type" : "markdown",
+    "source" : "###Does not work as we expected\n\n###Let's redefine"
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false,
+      "id" : "325AE43C4E9D47BB87FA79F50D080F9D"
+    },
+    "cell_type" : "code",
+    "source" : "val hours = (pickup: Long, dropoff: Long) => {\n  val retVal = TimeUnit.HOURS.convert(dropoff - pickup, TimeUnit.MILLISECONDS)\n  if (dropoff - pickup < 0 && retVal == 0) {\n    -1\n  } else {\n    retVal\n  }\n}",
+    "outputs" : [ {
+      "name" : "stdout",
+      "output_type" : "stream",
+      "text" : "hours: (Long, Long) => Long = <function2>\n"
+    }, {
+      "metadata" : { },
+      "data" : {
+        "text/html" : ""
+      },
+      "output_type" : "execute_result",
+      "execution_count" : 16,
+      "time" : "Took: 2 seconds 252 milliseconds, at 2017-7-23 0:9"
+    } ]
+  }, {
+    "metadata" : {
+      "id" : "89E7ACCACAD14CB1833496241CD6A9D0"
+    },
+    "cell_type" : "markdown",
+    "source" : "###Test again"
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false,
+      "id" : "3D89CE3D921049EE8A51CC33DA4D0695"
+    },
+    "cell_type" : "code",
+    "source" : "hours(1,0)",
+    "outputs" : [ {
+      "name" : "stdout",
+      "output_type" : "stream",
+      "text" : "res22: Long = -1\n"
+    }, {
+      "metadata" : { },
+      "data" : {
+        "text/html" : "-1"
+      },
+      "output_type" : "execute_result",
+      "execution_count" : 17,
+      "time" : "Took: 3 seconds 234 milliseconds, at 2017-7-23 0:9"
+    } ]
+  }, {
+    "metadata" : {
+      "id" : "516106D221E44C2B896E80D1C7717F33"
+    },
+    "cell_type" : "markdown",
+    "source" : "###Worked"
+  }, {
+    "metadata" : {
+      "id" : "321379C9E351462C8B79132C4A5858FD"
+    },
+    "cell_type" : "markdown",
+    "source" : "###We would like to be able to use our hours function to compute a histogram of the number of trips that lasted at least a given number of hours.\n\n###This sort of calculation is exactly what the Dataset API and Spark SQL are designed to do.\n\n###We can only use these methods on the columns of a Dataset instance, whereas the hour UDF is computed from two of these columns.\n"
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false,
+      "presentation" : {
+        "tabs_state" : "{\n  \"tab_id\": \"#tab2068329280-0\"\n}",
+        "pivot_chart_state" : "{\n  \"hiddenAttributes\": [],\n  \"menuLimit\": 200,\n  \"cols\": [],\n  \"rows\": [],\n  \"vals\": [],\n  \"exclusions\": {},\n  \"inclusions\": {},\n  \"unusedAttrsVertical\": 85,\n  \"autoSortUnusedAttrs\": false,\n  \"inclusionsInfo\": {},\n  \"aggregatorName\": \"Count\",\n  \"rendererName\": \"Table\"\n}"
+      },
+      "id" : "37EC286D029947D38BF0DF9F6E81B0F1"
+    },
+    "cell_type" : "code",
+    "source" : "import org.apache.spark.sql.functions.udf\n\nval hoursUDF = udf(hours)",
+    "outputs" : [ {
+      "name" : "stdout",
+      "output_type" : "stream",
+      "text" : "import org.apache.spark.sql.functions.udf\nhoursUDF: org.apache.spark.sql.expressions.UserDefinedFunction = UserDefinedFunction(<function2>,LongType,Some(List(LongType, LongType)))\n"
+    }, {
+      "metadata" : { },
+      "data" : {
+        "text/html" : ""
+      },
+      "output_type" : "execute_result",
+      "execution_count" : 18,
+      "time" : "Took: 2 seconds 278 milliseconds, at 2017-7-23 0:10"
+    } ]
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false,
+      "presentation" : {
+        "tabs_state" : "{\n  \"tab_id\": \"#tab2008609664-0\"\n}",
+        "pivot_chart_state" : "{\n  \"hiddenAttributes\": [],\n  \"menuLimit\": 200,\n  \"cols\": [],\n  \"rows\": [],\n  \"vals\": [],\n  \"exclusions\": {},\n  \"inclusions\": {},\n  \"unusedAttrsVertical\": 85,\n  \"autoSortUnusedAttrs\": false,\n  \"inclusionsInfo\": {},\n  \"aggregatorName\": \"Count\",\n  \"rendererName\": \"Table\"\n}"
+      },
+      "id" : "4022B10A485040E0BF4033B406CC657B"
+    },
+    "cell_type" : "code",
+    "source" : "taxiGood.\n  groupBy(hoursUDF($\"pickupTime\", $\"dropoffTime\").as(\"hours\")).\n  count().\n  sort(\"hours\").\n  collect()",
+    "outputs" : [ {
+      "name" : "stdout",
+      "output_type" : "stream",
+      "text" : "res25: Array[org.apache.spark.sql.Row] = Array([-20,2], [-16,2], [-3,1], [-1,292], [0,12700447], [1,36759], [2,1053], [3,279], [4,222], [5,146], [6,191], [7,208], [8,170], [9,162], [10,155], [11,121], [12,113], [13,120], [14,123], [15,171], [16,195], [17,161], [18,95], [19,57], [20,44], [21,97], [22,277], [23,7244], [24,2], [26,1], [29,1], [46,1], [54,1], [92,1], [112,1], [159,1], [168,1], [212,1], [230,5], [231,3], [232,4], [233,2], [234,2], [235,1], [236,2], [237,3], [238,3], [283,1], [304,1], [396,1], [403,1], [420,1], [422,1], [432,1], [479,1], [480,1], [499,1], [502,2], [503,2], [509,1], [751,1], [1333,1], [1415,2], [1416,1], [4486,3], [4487,3], [4506,1], [9119,3], [9120,2], [9121,2], [9140,3], [9141,4], [9142,2])\n"
+    }, {
+      "metadata" : { },
+      "data" : {
+        "text/html" : "<div>\n      <script data-this=\"{&quot;dataId&quot;:&quot;anon4d8c972fcb674951a4b0fd8996580906&quot;,&quot;dataInit&quot;:[],&quot;genId&quot;:&quot;2008609664&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/req(['../javascripts/notebook/playground','../javascripts/notebook/magic/tabs'], \n      function(playground, _magictabs) {\n        // data ==> data-this (in observable.js's scopedEval) ==> this in JS => { dataId, dataInit, ... }\n        // this ==> scope (in observable.js's scopedEval) ==> this.parentElement ==> div.container below (toHtml)\n\n        playground.call(data,\n                        this\n                        ,\n                        {\n    \"f\": _magictabs,\n    \"o\": {}\n  }\n  \n                        \n                        \n                      );\n      }\n    );/*]]>*/</script>\n    <div>\n      <div>\n        <ul class=\"nav nav-tabs\" id=\"ul2008609664\"><li>\n              <a href=\"#tab2008609664-0\"><i class=\"fa fa-table\"/></a>\n            </li><li>\n              <a href=\"#tab2008609664-1\"><i class=\"fa fa-dot-circle-o\"/></a>\n            </li><li>\n              <a href=\"#tab2008609664-2\"><i class=\"fa fa-line-chart\"/></a>\n            </li><li>\n              <a href=\"#tab2008609664-3\"><i class=\"fa fa-bar-chart\"/></a>\n            </li><li>\n              <a href=\"#tab2008609664-4\"><i class=\"fa fa-cubes\"/></a>\n            </li></ul>\n\n        <div class=\"tab-content\" id=\"tab2008609664\"><div class=\"tab-pane\" id=\"tab2008609664-0\">\n            <div>\n      <script data-this=\"{&quot;dataId&quot;:&quot;anon62d2f85609971b45b251a5797e2a93bb&quot;,&quot;dataInit&quot;:[{&quot;hours&quot;:-20,&quot;count&quot;:2},{&quot;hours&quot;:-16,&quot;count&quot;:2},{&quot;hours&quot;:-3,&quot;count&quot;:1},{&quot;hours&quot;:-1,&quot;count&quot;:292},{&quot;hours&quot;:0,&quot;count&quot;:12700447},{&quot;hours&quot;:1,&quot;count&quot;:36759},{&quot;hours&quot;:2,&quot;count&quot;:1053},{&quot;hours&quot;:3,&quot;count&quot;:279},{&quot;hours&quot;:4,&quot;count&quot;:222},{&quot;hours&quot;:5,&quot;count&quot;:146},{&quot;hours&quot;:6,&quot;count&quot;:191},{&quot;hours&quot;:7,&quot;count&quot;:208},{&quot;hours&quot;:8,&quot;count&quot;:170},{&quot;hours&quot;:9,&quot;count&quot;:162},{&quot;hours&quot;:10,&quot;count&quot;:155},{&quot;hours&quot;:11,&quot;count&quot;:121},{&quot;hours&quot;:12,&quot;count&quot;:113},{&quot;hours&quot;:13,&quot;count&quot;:120},{&quot;hours&quot;:14,&quot;count&quot;:123},{&quot;hours&quot;:15,&quot;count&quot;:171},{&quot;hours&quot;:16,&quot;count&quot;:195},{&quot;hours&quot;:17,&quot;count&quot;:161},{&quot;hours&quot;:18,&quot;count&quot;:95},{&quot;hours&quot;:19,&quot;count&quot;:57},{&quot;hours&quot;:20,&quot;count&quot;:44},{&quot;hours&quot;:21,&quot;count&quot;:97},{&quot;hours&quot;:22,&quot;count&quot;:277},{&quot;hours&quot;:23,&quot;count&quot;:7244},{&quot;hours&quot;:24,&quot;count&quot;:2},{&quot;hours&quot;:26,&quot;count&quot;:1},{&quot;hours&quot;:29,&quot;count&quot;:1},{&quot;hours&quot;:46,&quot;count&quot;:1},{&quot;hours&quot;:54,&quot;count&quot;:1},{&quot;hours&quot;:92,&quot;count&quot;:1},{&quot;hours&quot;:112,&quot;count&quot;:1},{&quot;hours&quot;:159,&quot;count&quot;:1},{&quot;hours&quot;:168,&quot;count&quot;:1},{&quot;hours&quot;:212,&quot;count&quot;:1},{&quot;hours&quot;:230,&quot;count&quot;:5},{&quot;hours&quot;:231,&quot;count&quot;:3},{&quot;hours&quot;:232,&quot;count&quot;:4},{&quot;hours&quot;:233,&quot;count&quot;:2},{&quot;hours&quot;:234,&quot;count&quot;:2},{&quot;hours&quot;:235,&quot;count&quot;:1},{&quot;hours&quot;:236,&quot;count&quot;:2},{&quot;hours&quot;:237,&quot;count&quot;:3},{&quot;hours&quot;:238,&quot;count&quot;:3},{&quot;hours&quot;:283,&quot;count&quot;:1},{&quot;hours&quot;:304,&quot;count&quot;:1},{&quot;hours&quot;:396,&quot;count&quot;:1},{&quot;hours&quot;:403,&quot;count&quot;:1},{&quot;hours&quot;:420,&quot;count&quot;:1},{&quot;hours&quot;:422,&quot;count&quot;:1},{&quot;hours&quot;:432,&quot;count&quot;:1},{&quot;hours&quot;:479,&quot;count&quot;:1},{&quot;hours&quot;:480,&quot;count&quot;:1},{&quot;hours&quot;:499,&quot;count&quot;:1},{&quot;hours&quot;:502,&quot;count&quot;:2},{&quot;hours&quot;:503,&quot;count&quot;:2},{&quot;hours&quot;:509,&quot;count&quot;:1},{&quot;hours&quot;:751,&quot;count&quot;:1},{&quot;hours&quot;:1333,&quot;count&quot;:1},{&quot;hours&quot;:1415,&quot;count&quot;:2},{&quot;hours&quot;:1416,&quot;count&quot;:1},{&quot;hours&quot;:4486,&quot;count&quot;:3},{&quot;hours&quot;:4487,&quot;count&quot;:3},{&quot;hours&quot;:4506,&quot;count&quot;:1},{&quot;hours&quot;:9119,&quot;count&quot;:3},{&quot;hours&quot;:9120,&quot;count&quot;:2},{&quot;hours&quot;:9121,&quot;count&quot;:2},{&quot;hours&quot;:9140,&quot;count&quot;:3},{&quot;hours&quot;:9141,&quot;count&quot;:4},{&quot;hours&quot;:9142,&quot;count&quot;:2}],&quot;genId&quot;:&quot;1226575274&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/req(['../javascripts/notebook/playground','../javascripts/notebook/magic/tableChart'], \n      function(playground, _magictableChart) {\n        // data ==> data-this (in observable.js's scopedEval) ==> this in JS => { dataId, dataInit, ... }\n        // this ==> scope (in observable.js's scopedEval) ==> this.parentElement ==> div.container below (toHtml)\n\n        playground.call(data,\n                        this\n                        ,\n                        {\n    \"f\": _magictableChart,\n    \"o\": {\"headers\":[\"hours\",\"count\"],\"width\":600,\"height\":400}\n  }\n  \n                        \n                        \n                      );\n      }\n    );/*]]>*/</script>\n    <div>\n      <span class=\"chart-total-item-count\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anon2b0120d47cb7ea2355befb8513e9694a&quot;,&quot;initialValue&quot;:&quot;73&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p> entries total</span>\n      <span class=\"chart-sampling-warning\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anonb6b5edd50de1cfc475f1d60be84105fc&quot;,&quot;initialValue&quot;:&quot;&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p></span>\n      <div>\n      </div>\n    </div></div>\n            </div><div class=\"tab-pane\" id=\"tab2008609664-1\">\n            <div>\n      <script data-this=\"{&quot;dataId&quot;:&quot;anonb161326d6ebd51d4a2f3a4f393f1fb88&quot;,&quot;dataInit&quot;:[{&quot;hours&quot;:-20,&quot;count&quot;:2},{&quot;hours&quot;:-16,&quot;count&quot;:2},{&quot;hours&quot;:-3,&quot;count&quot;:1},{&quot;hours&quot;:-1,&quot;count&quot;:292},{&quot;hours&quot;:0,&quot;count&quot;:12700447},{&quot;hours&quot;:1,&quot;count&quot;:36759},{&quot;hours&quot;:2,&quot;count&quot;:1053},{&quot;hours&quot;:3,&quot;count&quot;:279},{&quot;hours&quot;:4,&quot;count&quot;:222},{&quot;hours&quot;:5,&quot;count&quot;:146},{&quot;hours&quot;:6,&quot;count&quot;:191},{&quot;hours&quot;:7,&quot;count&quot;:208},{&quot;hours&quot;:8,&quot;count&quot;:170},{&quot;hours&quot;:9,&quot;count&quot;:162},{&quot;hours&quot;:10,&quot;count&quot;:155},{&quot;hours&quot;:11,&quot;count&quot;:121},{&quot;hours&quot;:12,&quot;count&quot;:113},{&quot;hours&quot;:13,&quot;count&quot;:120},{&quot;hours&quot;:14,&quot;count&quot;:123},{&quot;hours&quot;:15,&quot;count&quot;:171},{&quot;hours&quot;:16,&quot;count&quot;:195},{&quot;hours&quot;:17,&quot;count&quot;:161},{&quot;hours&quot;:18,&quot;count&quot;:95},{&quot;hours&quot;:19,&quot;count&quot;:57},{&quot;hours&quot;:20,&quot;count&quot;:44},{&quot;hours&quot;:21,&quot;count&quot;:97},{&quot;hours&quot;:22,&quot;count&quot;:277},{&quot;hours&quot;:23,&quot;count&quot;:7244},{&quot;hours&quot;:24,&quot;count&quot;:2},{&quot;hours&quot;:26,&quot;count&quot;:1},{&quot;hours&quot;:29,&quot;count&quot;:1},{&quot;hours&quot;:46,&quot;count&quot;:1},{&quot;hours&quot;:54,&quot;count&quot;:1},{&quot;hours&quot;:92,&quot;count&quot;:1},{&quot;hours&quot;:112,&quot;count&quot;:1},{&quot;hours&quot;:159,&quot;count&quot;:1},{&quot;hours&quot;:168,&quot;count&quot;:1},{&quot;hours&quot;:212,&quot;count&quot;:1},{&quot;hours&quot;:230,&quot;count&quot;:5},{&quot;hours&quot;:231,&quot;count&quot;:3},{&quot;hours&quot;:232,&quot;count&quot;:4},{&quot;hours&quot;:233,&quot;count&quot;:2},{&quot;hours&quot;:234,&quot;count&quot;:2},{&quot;hours&quot;:235,&quot;count&quot;:1},{&quot;hours&quot;:236,&quot;count&quot;:2},{&quot;hours&quot;:237,&quot;count&quot;:3},{&quot;hours&quot;:238,&quot;count&quot;:3},{&quot;hours&quot;:283,&quot;count&quot;:1},{&quot;hours&quot;:304,&quot;count&quot;:1},{&quot;hours&quot;:396,&quot;count&quot;:1},{&quot;hours&quot;:403,&quot;count&quot;:1},{&quot;hours&quot;:420,&quot;count&quot;:1},{&quot;hours&quot;:422,&quot;count&quot;:1},{&quot;hours&quot;:432,&quot;count&quot;:1},{&quot;hours&quot;:479,&quot;count&quot;:1},{&quot;hours&quot;:480,&quot;count&quot;:1},{&quot;hours&quot;:499,&quot;count&quot;:1},{&quot;hours&quot;:502,&quot;count&quot;:2},{&quot;hours&quot;:503,&quot;count&quot;:2},{&quot;hours&quot;:509,&quot;count&quot;:1},{&quot;hours&quot;:751,&quot;count&quot;:1},{&quot;hours&quot;:1333,&quot;count&quot;:1},{&quot;hours&quot;:1415,&quot;count&quot;:2},{&quot;hours&quot;:1416,&quot;count&quot;:1},{&quot;hours&quot;:4486,&quot;count&quot;:3},{&quot;hours&quot;:4487,&quot;count&quot;:3},{&quot;hours&quot;:4506,&quot;count&quot;:1},{&quot;hours&quot;:9119,&quot;count&quot;:3},{&quot;hours&quot;:9120,&quot;count&quot;:2},{&quot;hours&quot;:9121,&quot;count&quot;:2},{&quot;hours&quot;:9140,&quot;count&quot;:3},{&quot;hours&quot;:9141,&quot;count&quot;:4},{&quot;hours&quot;:9142,&quot;count&quot;:2}],&quot;genId&quot;:&quot;426314950&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/req(['../javascripts/notebook/playground','../javascripts/notebook/magic/scatterChart'], \n      function(playground, _magicscatterChart) {\n        // data ==> data-this (in observable.js's scopedEval) ==> this in JS => { dataId, dataInit, ... }\n        // this ==> scope (in observable.js's scopedEval) ==> this.parentElement ==> div.container below (toHtml)\n\n        playground.call(data,\n                        this\n                        ,\n                        {\n    \"f\": _magicscatterChart,\n    \"o\": {\"x\":\"hours\",\"y\":\"count\",\"width\":600,\"height\":400}\n  }\n  \n                        \n                        \n                      );\n      }\n    );/*]]>*/</script>\n    <div>\n      <span class=\"chart-total-item-count\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anond2c25a36a8204d34b51fa9512787e091&quot;,&quot;initialValue&quot;:&quot;73&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p> entries total</span>\n      <span class=\"chart-sampling-warning\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anon54c7126814e11e591a07cb376ec7c619&quot;,&quot;initialValue&quot;:&quot;&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p></span>\n      <div>\n      </div>\n    </div></div>\n            </div><div class=\"tab-pane\" id=\"tab2008609664-2\">\n            <div>\n      <script data-this=\"{&quot;dataId&quot;:&quot;anon13e18901825d13160bc545a00e2530fc&quot;,&quot;dataInit&quot;:[{&quot;hours&quot;:-20,&quot;count&quot;:2},{&quot;hours&quot;:-16,&quot;count&quot;:2},{&quot;hours&quot;:-3,&quot;count&quot;:1},{&quot;hours&quot;:-1,&quot;count&quot;:292},{&quot;hours&quot;:0,&quot;count&quot;:12700447},{&quot;hours&quot;:1,&quot;count&quot;:36759},{&quot;hours&quot;:2,&quot;count&quot;:1053},{&quot;hours&quot;:3,&quot;count&quot;:279},{&quot;hours&quot;:4,&quot;count&quot;:222},{&quot;hours&quot;:5,&quot;count&quot;:146},{&quot;hours&quot;:6,&quot;count&quot;:191},{&quot;hours&quot;:7,&quot;count&quot;:208},{&quot;hours&quot;:8,&quot;count&quot;:170},{&quot;hours&quot;:9,&quot;count&quot;:162},{&quot;hours&quot;:10,&quot;count&quot;:155},{&quot;hours&quot;:11,&quot;count&quot;:121},{&quot;hours&quot;:12,&quot;count&quot;:113},{&quot;hours&quot;:13,&quot;count&quot;:120},{&quot;hours&quot;:14,&quot;count&quot;:123},{&quot;hours&quot;:15,&quot;count&quot;:171},{&quot;hours&quot;:16,&quot;count&quot;:195},{&quot;hours&quot;:17,&quot;count&quot;:161},{&quot;hours&quot;:18,&quot;count&quot;:95},{&quot;hours&quot;:19,&quot;count&quot;:57},{&quot;hours&quot;:20,&quot;count&quot;:44},{&quot;hours&quot;:21,&quot;count&quot;:97},{&quot;hours&quot;:22,&quot;count&quot;:277},{&quot;hours&quot;:23,&quot;count&quot;:7244},{&quot;hours&quot;:24,&quot;count&quot;:2},{&quot;hours&quot;:26,&quot;count&quot;:1},{&quot;hours&quot;:29,&quot;count&quot;:1},{&quot;hours&quot;:46,&quot;count&quot;:1},{&quot;hours&quot;:54,&quot;count&quot;:1},{&quot;hours&quot;:92,&quot;count&quot;:1},{&quot;hours&quot;:112,&quot;count&quot;:1},{&quot;hours&quot;:159,&quot;count&quot;:1},{&quot;hours&quot;:168,&quot;count&quot;:1},{&quot;hours&quot;:212,&quot;count&quot;:1},{&quot;hours&quot;:230,&quot;count&quot;:5},{&quot;hours&quot;:231,&quot;count&quot;:3},{&quot;hours&quot;:232,&quot;count&quot;:4},{&quot;hours&quot;:233,&quot;count&quot;:2},{&quot;hours&quot;:234,&quot;count&quot;:2},{&quot;hours&quot;:235,&quot;count&quot;:1},{&quot;hours&quot;:236,&quot;count&quot;:2},{&quot;hours&quot;:237,&quot;count&quot;:3},{&quot;hours&quot;:238,&quot;count&quot;:3},{&quot;hours&quot;:283,&quot;count&quot;:1},{&quot;hours&quot;:304,&quot;count&quot;:1},{&quot;hours&quot;:396,&quot;count&quot;:1},{&quot;hours&quot;:403,&quot;count&quot;:1},{&quot;hours&quot;:420,&quot;count&quot;:1},{&quot;hours&quot;:422,&quot;count&quot;:1},{&quot;hours&quot;:432,&quot;count&quot;:1},{&quot;hours&quot;:479,&quot;count&quot;:1},{&quot;hours&quot;:480,&quot;count&quot;:1},{&quot;hours&quot;:499,&quot;count&quot;:1},{&quot;hours&quot;:502,&quot;count&quot;:2},{&quot;hours&quot;:503,&quot;count&quot;:2},{&quot;hours&quot;:509,&quot;count&quot;:1},{&quot;hours&quot;:751,&quot;count&quot;:1},{&quot;hours&quot;:1333,&quot;count&quot;:1},{&quot;hours&quot;:1415,&quot;count&quot;:2},{&quot;hours&quot;:1416,&quot;count&quot;:1},{&quot;hours&quot;:4486,&quot;count&quot;:3},{&quot;hours&quot;:4487,&quot;count&quot;:3},{&quot;hours&quot;:4506,&quot;count&quot;:1},{&quot;hours&quot;:9119,&quot;count&quot;:3},{&quot;hours&quot;:9120,&quot;count&quot;:2},{&quot;hours&quot;:9121,&quot;count&quot;:2},{&quot;hours&quot;:9140,&quot;count&quot;:3},{&quot;hours&quot;:9141,&quot;count&quot;:4},{&quot;hours&quot;:9142,&quot;count&quot;:2}],&quot;genId&quot;:&quot;1633316030&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/req(['../javascripts/notebook/playground','../javascripts/notebook/magic/lineChart'], \n      function(playground, _magiclineChart) {\n        // data ==> data-this (in observable.js's scopedEval) ==> this in JS => { dataId, dataInit, ... }\n        // this ==> scope (in observable.js's scopedEval) ==> this.parentElement ==> div.container below (toHtml)\n\n        playground.call(data,\n                        this\n                        ,\n                        {\n    \"f\": _magiclineChart,\n    \"o\": {\"x\":\"hours\",\"y\":\"count\",\"width\":600,\"height\":400}\n  }\n  \n                        \n                        \n                      );\n      }\n    );/*]]>*/</script>\n    <div>\n      <span class=\"chart-total-item-count\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anonff7f12d2355ad18c021887aeccd4937e&quot;,&quot;initialValue&quot;:&quot;73&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p> entries total</span>\n      <span class=\"chart-sampling-warning\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anon3b459d1c39a12c8d83360e84b16195bf&quot;,&quot;initialValue&quot;:&quot;&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p></span>\n      <div>\n      </div>\n    </div></div>\n            </div><div class=\"tab-pane\" id=\"tab2008609664-3\">\n            <div>\n      <script data-this=\"{&quot;dataId&quot;:&quot;anon0dbcea043dadeec263232514ebc848a4&quot;,&quot;dataInit&quot;:[{&quot;hours&quot;:-20,&quot;count&quot;:2},{&quot;hours&quot;:-16,&quot;count&quot;:2},{&quot;hours&quot;:-3,&quot;count&quot;:1},{&quot;hours&quot;:-1,&quot;count&quot;:292},{&quot;hours&quot;:0,&quot;count&quot;:12700447},{&quot;hours&quot;:1,&quot;count&quot;:36759},{&quot;hours&quot;:2,&quot;count&quot;:1053},{&quot;hours&quot;:3,&quot;count&quot;:279},{&quot;hours&quot;:4,&quot;count&quot;:222},{&quot;hours&quot;:5,&quot;count&quot;:146},{&quot;hours&quot;:6,&quot;count&quot;:191},{&quot;hours&quot;:7,&quot;count&quot;:208},{&quot;hours&quot;:8,&quot;count&quot;:170},{&quot;hours&quot;:9,&quot;count&quot;:162},{&quot;hours&quot;:10,&quot;count&quot;:155},{&quot;hours&quot;:11,&quot;count&quot;:121},{&quot;hours&quot;:12,&quot;count&quot;:113},{&quot;hours&quot;:13,&quot;count&quot;:120},{&quot;hours&quot;:14,&quot;count&quot;:123},{&quot;hours&quot;:15,&quot;count&quot;:171},{&quot;hours&quot;:16,&quot;count&quot;:195},{&quot;hours&quot;:17,&quot;count&quot;:161},{&quot;hours&quot;:18,&quot;count&quot;:95},{&quot;hours&quot;:19,&quot;count&quot;:57},{&quot;hours&quot;:20,&quot;count&quot;:44},{&quot;hours&quot;:21,&quot;count&quot;:97},{&quot;hours&quot;:22,&quot;count&quot;:277},{&quot;hours&quot;:23,&quot;count&quot;:7244},{&quot;hours&quot;:24,&quot;count&quot;:2},{&quot;hours&quot;:26,&quot;count&quot;:1},{&quot;hours&quot;:29,&quot;count&quot;:1},{&quot;hours&quot;:46,&quot;count&quot;:1},{&quot;hours&quot;:54,&quot;count&quot;:1},{&quot;hours&quot;:92,&quot;count&quot;:1},{&quot;hours&quot;:112,&quot;count&quot;:1},{&quot;hours&quot;:159,&quot;count&quot;:1},{&quot;hours&quot;:168,&quot;count&quot;:1},{&quot;hours&quot;:212,&quot;count&quot;:1},{&quot;hours&quot;:230,&quot;count&quot;:5},{&quot;hours&quot;:231,&quot;count&quot;:3},{&quot;hours&quot;:232,&quot;count&quot;:4},{&quot;hours&quot;:233,&quot;count&quot;:2},{&quot;hours&quot;:234,&quot;count&quot;:2},{&quot;hours&quot;:235,&quot;count&quot;:1},{&quot;hours&quot;:236,&quot;count&quot;:2},{&quot;hours&quot;:237,&quot;count&quot;:3},{&quot;hours&quot;:238,&quot;count&quot;:3},{&quot;hours&quot;:283,&quot;count&quot;:1},{&quot;hours&quot;:304,&quot;count&quot;:1},{&quot;hours&quot;:396,&quot;count&quot;:1},{&quot;hours&quot;:403,&quot;count&quot;:1},{&quot;hours&quot;:420,&quot;count&quot;:1},{&quot;hours&quot;:422,&quot;count&quot;:1},{&quot;hours&quot;:432,&quot;count&quot;:1},{&quot;hours&quot;:479,&quot;count&quot;:1},{&quot;hours&quot;:480,&quot;count&quot;:1},{&quot;hours&quot;:499,&quot;count&quot;:1},{&quot;hours&quot;:502,&quot;count&quot;:2},{&quot;hours&quot;:503,&quot;count&quot;:2},{&quot;hours&quot;:509,&quot;count&quot;:1},{&quot;hours&quot;:751,&quot;count&quot;:1},{&quot;hours&quot;:1333,&quot;count&quot;:1},{&quot;hours&quot;:1415,&quot;count&quot;:2},{&quot;hours&quot;:1416,&quot;count&quot;:1},{&quot;hours&quot;:4486,&quot;count&quot;:3},{&quot;hours&quot;:4487,&quot;count&quot;:3},{&quot;hours&quot;:4506,&quot;count&quot;:1},{&quot;hours&quot;:9119,&quot;count&quot;:3},{&quot;hours&quot;:9120,&quot;count&quot;:2},{&quot;hours&quot;:9121,&quot;count&quot;:2},{&quot;hours&quot;:9140,&quot;count&quot;:3},{&quot;hours&quot;:9141,&quot;count&quot;:4},{&quot;hours&quot;:9142,&quot;count&quot;:2}],&quot;genId&quot;:&quot;1016304056&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/req(['../javascripts/notebook/playground','../javascripts/notebook/magic/barChart'], \n      function(playground, _magicbarChart) {\n        // data ==> data-this (in observable.js's scopedEval) ==> this in JS => { dataId, dataInit, ... }\n        // this ==> scope (in observable.js's scopedEval) ==> this.parentElement ==> div.container below (toHtml)\n\n        playground.call(data,\n                        this\n                        ,\n                        {\n    \"f\": _magicbarChart,\n    \"o\": {\"x\":\"hours\",\"y\":\"count\",\"width\":600,\"height\":400}\n  }\n  \n                        \n                        \n                      );\n      }\n    );/*]]>*/</script>\n    <div>\n      <span class=\"chart-total-item-count\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anonffa7f24d9c2097cbf52a95a7607b899c&quot;,&quot;initialValue&quot;:&quot;73&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p> entries total</span>\n      <span class=\"chart-sampling-warning\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anonc142e3485cf10c690e2e9346ffc619d3&quot;,&quot;initialValue&quot;:&quot;&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p></span>\n      <div>\n      </div>\n    </div></div>\n            </div><div class=\"tab-pane\" id=\"tab2008609664-4\">\n            <div>\n      <script data-this=\"{&quot;dataId&quot;:&quot;anon294e99f9d17d39d9673f0d549b19501f&quot;,&quot;dataInit&quot;:[{&quot;hours&quot;:-20,&quot;count&quot;:2},{&quot;hours&quot;:-16,&quot;count&quot;:2},{&quot;hours&quot;:-3,&quot;count&quot;:1},{&quot;hours&quot;:-1,&quot;count&quot;:292},{&quot;hours&quot;:0,&quot;count&quot;:12700447},{&quot;hours&quot;:1,&quot;count&quot;:36759},{&quot;hours&quot;:2,&quot;count&quot;:1053},{&quot;hours&quot;:3,&quot;count&quot;:279},{&quot;hours&quot;:4,&quot;count&quot;:222},{&quot;hours&quot;:5,&quot;count&quot;:146},{&quot;hours&quot;:6,&quot;count&quot;:191},{&quot;hours&quot;:7,&quot;count&quot;:208},{&quot;hours&quot;:8,&quot;count&quot;:170},{&quot;hours&quot;:9,&quot;count&quot;:162},{&quot;hours&quot;:10,&quot;count&quot;:155},{&quot;hours&quot;:11,&quot;count&quot;:121},{&quot;hours&quot;:12,&quot;count&quot;:113},{&quot;hours&quot;:13,&quot;count&quot;:120},{&quot;hours&quot;:14,&quot;count&quot;:123},{&quot;hours&quot;:15,&quot;count&quot;:171},{&quot;hours&quot;:16,&quot;count&quot;:195},{&quot;hours&quot;:17,&quot;count&quot;:161},{&quot;hours&quot;:18,&quot;count&quot;:95},{&quot;hours&quot;:19,&quot;count&quot;:57},{&quot;hours&quot;:20,&quot;count&quot;:44},{&quot;hours&quot;:21,&quot;count&quot;:97},{&quot;hours&quot;:22,&quot;count&quot;:277},{&quot;hours&quot;:23,&quot;count&quot;:7244},{&quot;hours&quot;:24,&quot;count&quot;:2},{&quot;hours&quot;:26,&quot;count&quot;:1},{&quot;hours&quot;:29,&quot;count&quot;:1},{&quot;hours&quot;:46,&quot;count&quot;:1},{&quot;hours&quot;:54,&quot;count&quot;:1},{&quot;hours&quot;:92,&quot;count&quot;:1},{&quot;hours&quot;:112,&quot;count&quot;:1},{&quot;hours&quot;:159,&quot;count&quot;:1},{&quot;hours&quot;:168,&quot;count&quot;:1},{&quot;hours&quot;:212,&quot;count&quot;:1},{&quot;hours&quot;:230,&quot;count&quot;:5},{&quot;hours&quot;:231,&quot;count&quot;:3},{&quot;hours&quot;:232,&quot;count&quot;:4},{&quot;hours&quot;:233,&quot;count&quot;:2},{&quot;hours&quot;:234,&quot;count&quot;:2},{&quot;hours&quot;:235,&quot;count&quot;:1},{&quot;hours&quot;:236,&quot;count&quot;:2},{&quot;hours&quot;:237,&quot;count&quot;:3},{&quot;hours&quot;:238,&quot;count&quot;:3},{&quot;hours&quot;:283,&quot;count&quot;:1},{&quot;hours&quot;:304,&quot;count&quot;:1},{&quot;hours&quot;:396,&quot;count&quot;:1},{&quot;hours&quot;:403,&quot;count&quot;:1},{&quot;hours&quot;:420,&quot;count&quot;:1},{&quot;hours&quot;:422,&quot;count&quot;:1},{&quot;hours&quot;:432,&quot;count&quot;:1},{&quot;hours&quot;:479,&quot;count&quot;:1},{&quot;hours&quot;:480,&quot;count&quot;:1},{&quot;hours&quot;:499,&quot;count&quot;:1},{&quot;hours&quot;:502,&quot;count&quot;:2},{&quot;hours&quot;:503,&quot;count&quot;:2},{&quot;hours&quot;:509,&quot;count&quot;:1},{&quot;hours&quot;:751,&quot;count&quot;:1},{&quot;hours&quot;:1333,&quot;count&quot;:1},{&quot;hours&quot;:1415,&quot;count&quot;:2},{&quot;hours&quot;:1416,&quot;count&quot;:1},{&quot;hours&quot;:4486,&quot;count&quot;:3},{&quot;hours&quot;:4487,&quot;count&quot;:3},{&quot;hours&quot;:4506,&quot;count&quot;:1},{&quot;hours&quot;:9119,&quot;count&quot;:3},{&quot;hours&quot;:9120,&quot;count&quot;:2},{&quot;hours&quot;:9121,&quot;count&quot;:2},{&quot;hours&quot;:9140,&quot;count&quot;:3},{&quot;hours&quot;:9141,&quot;count&quot;:4},{&quot;hours&quot;:9142,&quot;count&quot;:2}],&quot;genId&quot;:&quot;927998323&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/req(['../javascripts/notebook/playground','../javascripts/notebook/magic/pivotChart'], \n      function(playground, _magicpivotChart) {\n        // data ==> data-this (in observable.js's scopedEval) ==> this in JS => { dataId, dataInit, ... }\n        // this ==> scope (in observable.js's scopedEval) ==> this.parentElement ==> div.container below (toHtml)\n\n        playground.call(data,\n                        this\n                        ,\n                        {\n    \"f\": _magicpivotChart,\n    \"o\": {\"width\":600,\"height\":400,\"derivedAttributes\":{},\"extraOptions\":{}}\n  }\n  \n                        \n                        \n                      );\n      }\n    );/*]]>*/</script>\n    <div>\n      <span class=\"chart-total-item-count\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anon0c154230fcf4ba3d8df8d94429cba32b&quot;,&quot;initialValue&quot;:&quot;73&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p> entries total</span>\n      <span class=\"chart-sampling-warning\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anon1e7efaf332afc66c57c087e82826de68&quot;,&quot;initialValue&quot;:&quot;&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p></span>\n      <div>\n      </div>\n    </div></div>\n            </div></div>\n      </div>\n    </div></div>"
+      },
+      "output_type" : "execute_result",
+      "execution_count" : 19,
+      "time" : "Took: 14 seconds 442 milliseconds, at 2017-7-23 0:10"
+    } ]
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false,
+      "presentation" : {
+        "tabs_state" : "{\n  \"tab_id\": \"#tab978061653-0\"\n}",
+        "pivot_chart_state" : "{\n  \"hiddenAttributes\": [],\n  \"menuLimit\": 200,\n  \"cols\": [],\n  \"rows\": [],\n  \"vals\": [],\n  \"exclusions\": {},\n  \"inclusions\": {},\n  \"unusedAttrsVertical\": 85,\n  \"autoSortUnusedAttrs\": false,\n  \"inclusionsInfo\": {},\n  \"aggregatorName\": \"Count\",\n  \"rendererName\": \"Table\"\n}"
+      },
+      "id" : "8330630F23C64D678F27C00CE3A9D1C1"
+    },
+    "cell_type" : "code",
+    "source" : "taxiGood.\n  groupBy(hoursUDF($\"pickupTime\", $\"dropoffTime\").as(\"hours\")).\n  count().\n  where($\"hours\" > 1).\n  sort(\"hours\").\n  collect()\n",
+    "outputs" : [ {
+      "name" : "stdout",
+      "output_type" : "stream",
+      "text" : "res27: Array[org.apache.spark.sql.Row] = Array([2,1053], [3,279], [4,222], [5,146], [6,191], [7,208], [8,170], [9,162], [10,155], [11,121], [12,113], [13,120], [14,123], [15,171], [16,195], [17,161], [18,95], [19,57], [20,44], [21,97], [22,277], [23,7244], [24,2], [26,1], [29,1], [46,1], [54,1], [92,1], [112,1], [159,1], [168,1], [212,1], [230,5], [231,3], [232,4], [233,2], [234,2], [235,1], [236,2], [237,3], [238,3], [283,1], [304,1], [396,1], [403,1], [420,1], [422,1], [432,1], [479,1], [480,1], [499,1], [502,2], [503,2], [509,1], [751,1], [1333,1], [1415,2], [1416,1], [4486,3], [4487,3], [4506,1], [9119,3], [9120,2], [9121,2], [9140,3], [9141,4], [9142,2])\n"
+    }, {
+      "metadata" : { },
+      "data" : {
+        "text/html" : "<div>\n      <script data-this=\"{&quot;dataId&quot;:&quot;anonbe484f859997176655e2d3491ad22034&quot;,&quot;dataInit&quot;:[],&quot;genId&quot;:&quot;978061653&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/req(['../javascripts/notebook/playground','../javascripts/notebook/magic/tabs'], \n      function(playground, _magictabs) {\n        // data ==> data-this (in observable.js's scopedEval) ==> this in JS => { dataId, dataInit, ... }\n        // this ==> scope (in observable.js's scopedEval) ==> this.parentElement ==> div.container below (toHtml)\n\n        playground.call(data,\n                        this\n                        ,\n                        {\n    \"f\": _magictabs,\n    \"o\": {}\n  }\n  \n                        \n                        \n                      );\n      }\n    );/*]]>*/</script>\n    <div>\n      <div>\n        <ul class=\"nav nav-tabs\" id=\"ul978061653\"><li>\n              <a href=\"#tab978061653-0\"><i class=\"fa fa-table\"/></a>\n            </li><li>\n              <a href=\"#tab978061653-1\"><i class=\"fa fa-dot-circle-o\"/></a>\n            </li><li>\n              <a href=\"#tab978061653-2\"><i class=\"fa fa-line-chart\"/></a>\n            </li><li>\n              <a href=\"#tab978061653-3\"><i class=\"fa fa-bar-chart\"/></a>\n            </li><li>\n              <a href=\"#tab978061653-4\"><i class=\"fa fa-cubes\"/></a>\n            </li></ul>\n\n        <div class=\"tab-content\" id=\"tab978061653\"><div class=\"tab-pane\" id=\"tab978061653-0\">\n            <div>\n      <script data-this=\"{&quot;dataId&quot;:&quot;anonea5be4a34f3c2e505f910f64671d4582&quot;,&quot;dataInit&quot;:[{&quot;hours&quot;:2,&quot;count&quot;:1053},{&quot;hours&quot;:3,&quot;count&quot;:279},{&quot;hours&quot;:4,&quot;count&quot;:222},{&quot;hours&quot;:5,&quot;count&quot;:146},{&quot;hours&quot;:6,&quot;count&quot;:191},{&quot;hours&quot;:7,&quot;count&quot;:208},{&quot;hours&quot;:8,&quot;count&quot;:170},{&quot;hours&quot;:9,&quot;count&quot;:162},{&quot;hours&quot;:10,&quot;count&quot;:155},{&quot;hours&quot;:11,&quot;count&quot;:121},{&quot;hours&quot;:12,&quot;count&quot;:113},{&quot;hours&quot;:13,&quot;count&quot;:120},{&quot;hours&quot;:14,&quot;count&quot;:123},{&quot;hours&quot;:15,&quot;count&quot;:171},{&quot;hours&quot;:16,&quot;count&quot;:195},{&quot;hours&quot;:17,&quot;count&quot;:161},{&quot;hours&quot;:18,&quot;count&quot;:95},{&quot;hours&quot;:19,&quot;count&quot;:57},{&quot;hours&quot;:20,&quot;count&quot;:44},{&quot;hours&quot;:21,&quot;count&quot;:97},{&quot;hours&quot;:22,&quot;count&quot;:277},{&quot;hours&quot;:23,&quot;count&quot;:7244},{&quot;hours&quot;:24,&quot;count&quot;:2},{&quot;hours&quot;:26,&quot;count&quot;:1},{&quot;hours&quot;:29,&quot;count&quot;:1},{&quot;hours&quot;:46,&quot;count&quot;:1},{&quot;hours&quot;:54,&quot;count&quot;:1},{&quot;hours&quot;:92,&quot;count&quot;:1},{&quot;hours&quot;:112,&quot;count&quot;:1},{&quot;hours&quot;:159,&quot;count&quot;:1},{&quot;hours&quot;:168,&quot;count&quot;:1},{&quot;hours&quot;:212,&quot;count&quot;:1},{&quot;hours&quot;:230,&quot;count&quot;:5},{&quot;hours&quot;:231,&quot;count&quot;:3},{&quot;hours&quot;:232,&quot;count&quot;:4},{&quot;hours&quot;:233,&quot;count&quot;:2},{&quot;hours&quot;:234,&quot;count&quot;:2},{&quot;hours&quot;:235,&quot;count&quot;:1},{&quot;hours&quot;:236,&quot;count&quot;:2},{&quot;hours&quot;:237,&quot;count&quot;:3},{&quot;hours&quot;:238,&quot;count&quot;:3},{&quot;hours&quot;:283,&quot;count&quot;:1},{&quot;hours&quot;:304,&quot;count&quot;:1},{&quot;hours&quot;:396,&quot;count&quot;:1},{&quot;hours&quot;:403,&quot;count&quot;:1},{&quot;hours&quot;:420,&quot;count&quot;:1},{&quot;hours&quot;:422,&quot;count&quot;:1},{&quot;hours&quot;:432,&quot;count&quot;:1},{&quot;hours&quot;:479,&quot;count&quot;:1},{&quot;hours&quot;:480,&quot;count&quot;:1},{&quot;hours&quot;:499,&quot;count&quot;:1},{&quot;hours&quot;:502,&quot;count&quot;:2},{&quot;hours&quot;:503,&quot;count&quot;:2},{&quot;hours&quot;:509,&quot;count&quot;:1},{&quot;hours&quot;:751,&quot;count&quot;:1},{&quot;hours&quot;:1333,&quot;count&quot;:1},{&quot;hours&quot;:1415,&quot;count&quot;:2},{&quot;hours&quot;:1416,&quot;count&quot;:1},{&quot;hours&quot;:4486,&quot;count&quot;:3},{&quot;hours&quot;:4487,&quot;count&quot;:3},{&quot;hours&quot;:4506,&quot;count&quot;:1},{&quot;hours&quot;:9119,&quot;count&quot;:3},{&quot;hours&quot;:9120,&quot;count&quot;:2},{&quot;hours&quot;:9121,&quot;count&quot;:2},{&quot;hours&quot;:9140,&quot;count&quot;:3},{&quot;hours&quot;:9141,&quot;count&quot;:4},{&quot;hours&quot;:9142,&quot;count&quot;:2}],&quot;genId&quot;:&quot;1262133264&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/req(['../javascripts/notebook/playground','../javascripts/notebook/magic/tableChart'], \n      function(playground, _magictableChart) {\n        // data ==> data-this (in observable.js's scopedEval) ==> this in JS => { dataId, dataInit, ... }\n        // this ==> scope (in observable.js's scopedEval) ==> this.parentElement ==> div.container below (toHtml)\n\n        playground.call(data,\n                        this\n                        ,\n                        {\n    \"f\": _magictableChart,\n    \"o\": {\"headers\":[\"hours\",\"count\"],\"width\":600,\"height\":400}\n  }\n  \n                        \n                        \n                      );\n      }\n    );/*]]>*/</script>\n    <div>\n      <span class=\"chart-total-item-count\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anon85f100cb877c05e506e2318a4ea9bef9&quot;,&quot;initialValue&quot;:&quot;67&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p> entries total</span>\n      <span class=\"chart-sampling-warning\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anona76da10653b25820caf34ef2ccf1defb&quot;,&quot;initialValue&quot;:&quot;&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p></span>\n      <div>\n      </div>\n    </div></div>\n            </div><div class=\"tab-pane\" id=\"tab978061653-1\">\n            <div>\n      <script data-this=\"{&quot;dataId&quot;:&quot;anon86659a25b8be41bbb7c96fcde5d8adf9&quot;,&quot;dataInit&quot;:[{&quot;hours&quot;:2,&quot;count&quot;:1053},{&quot;hours&quot;:3,&quot;count&quot;:279},{&quot;hours&quot;:4,&quot;count&quot;:222},{&quot;hours&quot;:5,&quot;count&quot;:146},{&quot;hours&quot;:6,&quot;count&quot;:191},{&quot;hours&quot;:7,&quot;count&quot;:208},{&quot;hours&quot;:8,&quot;count&quot;:170},{&quot;hours&quot;:9,&quot;count&quot;:162},{&quot;hours&quot;:10,&quot;count&quot;:155},{&quot;hours&quot;:11,&quot;count&quot;:121},{&quot;hours&quot;:12,&quot;count&quot;:113},{&quot;hours&quot;:13,&quot;count&quot;:120},{&quot;hours&quot;:14,&quot;count&quot;:123},{&quot;hours&quot;:15,&quot;count&quot;:171},{&quot;hours&quot;:16,&quot;count&quot;:195},{&quot;hours&quot;:17,&quot;count&quot;:161},{&quot;hours&quot;:18,&quot;count&quot;:95},{&quot;hours&quot;:19,&quot;count&quot;:57},{&quot;hours&quot;:20,&quot;count&quot;:44},{&quot;hours&quot;:21,&quot;count&quot;:97},{&quot;hours&quot;:22,&quot;count&quot;:277},{&quot;hours&quot;:23,&quot;count&quot;:7244},{&quot;hours&quot;:24,&quot;count&quot;:2},{&quot;hours&quot;:26,&quot;count&quot;:1},{&quot;hours&quot;:29,&quot;count&quot;:1},{&quot;hours&quot;:46,&quot;count&quot;:1},{&quot;hours&quot;:54,&quot;count&quot;:1},{&quot;hours&quot;:92,&quot;count&quot;:1},{&quot;hours&quot;:112,&quot;count&quot;:1},{&quot;hours&quot;:159,&quot;count&quot;:1},{&quot;hours&quot;:168,&quot;count&quot;:1},{&quot;hours&quot;:212,&quot;count&quot;:1},{&quot;hours&quot;:230,&quot;count&quot;:5},{&quot;hours&quot;:231,&quot;count&quot;:3},{&quot;hours&quot;:232,&quot;count&quot;:4},{&quot;hours&quot;:233,&quot;count&quot;:2},{&quot;hours&quot;:234,&quot;count&quot;:2},{&quot;hours&quot;:235,&quot;count&quot;:1},{&quot;hours&quot;:236,&quot;count&quot;:2},{&quot;hours&quot;:237,&quot;count&quot;:3},{&quot;hours&quot;:238,&quot;count&quot;:3},{&quot;hours&quot;:283,&quot;count&quot;:1},{&quot;hours&quot;:304,&quot;count&quot;:1},{&quot;hours&quot;:396,&quot;count&quot;:1},{&quot;hours&quot;:403,&quot;count&quot;:1},{&quot;hours&quot;:420,&quot;count&quot;:1},{&quot;hours&quot;:422,&quot;count&quot;:1},{&quot;hours&quot;:432,&quot;count&quot;:1},{&quot;hours&quot;:479,&quot;count&quot;:1},{&quot;hours&quot;:480,&quot;count&quot;:1},{&quot;hours&quot;:499,&quot;count&quot;:1},{&quot;hours&quot;:502,&quot;count&quot;:2},{&quot;hours&quot;:503,&quot;count&quot;:2},{&quot;hours&quot;:509,&quot;count&quot;:1},{&quot;hours&quot;:751,&quot;count&quot;:1},{&quot;hours&quot;:1333,&quot;count&quot;:1},{&quot;hours&quot;:1415,&quot;count&quot;:2},{&quot;hours&quot;:1416,&quot;count&quot;:1},{&quot;hours&quot;:4486,&quot;count&quot;:3},{&quot;hours&quot;:4487,&quot;count&quot;:3},{&quot;hours&quot;:4506,&quot;count&quot;:1},{&quot;hours&quot;:9119,&quot;count&quot;:3},{&quot;hours&quot;:9120,&quot;count&quot;:2},{&quot;hours&quot;:9121,&quot;count&quot;:2},{&quot;hours&quot;:9140,&quot;count&quot;:3},{&quot;hours&quot;:9141,&quot;count&quot;:4},{&quot;hours&quot;:9142,&quot;count&quot;:2}],&quot;genId&quot;:&quot;1658007821&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/req(['../javascripts/notebook/playground','../javascripts/notebook/magic/scatterChart'], \n      function(playground, _magicscatterChart) {\n        // data ==> data-this (in observable.js's scopedEval) ==> this in JS => { dataId, dataInit, ... }\n        // this ==> scope (in observable.js's scopedEval) ==> this.parentElement ==> div.container below (toHtml)\n\n        playground.call(data,\n                        this\n                        ,\n                        {\n    \"f\": _magicscatterChart,\n    \"o\": {\"x\":\"hours\",\"y\":\"count\",\"width\":600,\"height\":400}\n  }\n  \n                        \n                        \n                      );\n      }\n    );/*]]>*/</script>\n    <div>\n      <span class=\"chart-total-item-count\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anonb66bb1bf2b5a4bcb509e6be1143ca8ef&quot;,&quot;initialValue&quot;:&quot;67&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p> entries total</span>\n      <span class=\"chart-sampling-warning\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anonb068a8c976f754b54098fc7301c25edc&quot;,&quot;initialValue&quot;:&quot;&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p></span>\n      <div>\n      </div>\n    </div></div>\n            </div><div class=\"tab-pane\" id=\"tab978061653-2\">\n            <div>\n      <script data-this=\"{&quot;dataId&quot;:&quot;anon7e027d4fd58f3041ee7f4c94e4ef3dd7&quot;,&quot;dataInit&quot;:[{&quot;hours&quot;:2,&quot;count&quot;:1053},{&quot;hours&quot;:3,&quot;count&quot;:279},{&quot;hours&quot;:4,&quot;count&quot;:222},{&quot;hours&quot;:5,&quot;count&quot;:146},{&quot;hours&quot;:6,&quot;count&quot;:191},{&quot;hours&quot;:7,&quot;count&quot;:208},{&quot;hours&quot;:8,&quot;count&quot;:170},{&quot;hours&quot;:9,&quot;count&quot;:162},{&quot;hours&quot;:10,&quot;count&quot;:155},{&quot;hours&quot;:11,&quot;count&quot;:121},{&quot;hours&quot;:12,&quot;count&quot;:113},{&quot;hours&quot;:13,&quot;count&quot;:120},{&quot;hours&quot;:14,&quot;count&quot;:123},{&quot;hours&quot;:15,&quot;count&quot;:171},{&quot;hours&quot;:16,&quot;count&quot;:195},{&quot;hours&quot;:17,&quot;count&quot;:161},{&quot;hours&quot;:18,&quot;count&quot;:95},{&quot;hours&quot;:19,&quot;count&quot;:57},{&quot;hours&quot;:20,&quot;count&quot;:44},{&quot;hours&quot;:21,&quot;count&quot;:97},{&quot;hours&quot;:22,&quot;count&quot;:277},{&quot;hours&quot;:23,&quot;count&quot;:7244},{&quot;hours&quot;:24,&quot;count&quot;:2},{&quot;hours&quot;:26,&quot;count&quot;:1},{&quot;hours&quot;:29,&quot;count&quot;:1},{&quot;hours&quot;:46,&quot;count&quot;:1},{&quot;hours&quot;:54,&quot;count&quot;:1},{&quot;hours&quot;:92,&quot;count&quot;:1},{&quot;hours&quot;:112,&quot;count&quot;:1},{&quot;hours&quot;:159,&quot;count&quot;:1},{&quot;hours&quot;:168,&quot;count&quot;:1},{&quot;hours&quot;:212,&quot;count&quot;:1},{&quot;hours&quot;:230,&quot;count&quot;:5},{&quot;hours&quot;:231,&quot;count&quot;:3},{&quot;hours&quot;:232,&quot;count&quot;:4},{&quot;hours&quot;:233,&quot;count&quot;:2},{&quot;hours&quot;:234,&quot;count&quot;:2},{&quot;hours&quot;:235,&quot;count&quot;:1},{&quot;hours&quot;:236,&quot;count&quot;:2},{&quot;hours&quot;:237,&quot;count&quot;:3},{&quot;hours&quot;:238,&quot;count&quot;:3},{&quot;hours&quot;:283,&quot;count&quot;:1},{&quot;hours&quot;:304,&quot;count&quot;:1},{&quot;hours&quot;:396,&quot;count&quot;:1},{&quot;hours&quot;:403,&quot;count&quot;:1},{&quot;hours&quot;:420,&quot;count&quot;:1},{&quot;hours&quot;:422,&quot;count&quot;:1},{&quot;hours&quot;:432,&quot;count&quot;:1},{&quot;hours&quot;:479,&quot;count&quot;:1},{&quot;hours&quot;:480,&quot;count&quot;:1},{&quot;hours&quot;:499,&quot;count&quot;:1},{&quot;hours&quot;:502,&quot;count&quot;:2},{&quot;hours&quot;:503,&quot;count&quot;:2},{&quot;hours&quot;:509,&quot;count&quot;:1},{&quot;hours&quot;:751,&quot;count&quot;:1},{&quot;hours&quot;:1333,&quot;count&quot;:1},{&quot;hours&quot;:1415,&quot;count&quot;:2},{&quot;hours&quot;:1416,&quot;count&quot;:1},{&quot;hours&quot;:4486,&quot;count&quot;:3},{&quot;hours&quot;:4487,&quot;count&quot;:3},{&quot;hours&quot;:4506,&quot;count&quot;:1},{&quot;hours&quot;:9119,&quot;count&quot;:3},{&quot;hours&quot;:9120,&quot;count&quot;:2},{&quot;hours&quot;:9121,&quot;count&quot;:2},{&quot;hours&quot;:9140,&quot;count&quot;:3},{&quot;hours&quot;:9141,&quot;count&quot;:4},{&quot;hours&quot;:9142,&quot;count&quot;:2}],&quot;genId&quot;:&quot;522322243&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/req(['../javascripts/notebook/playground','../javascripts/notebook/magic/lineChart'], \n      function(playground, _magiclineChart) {\n        // data ==> data-this (in observable.js's scopedEval) ==> this in JS => { dataId, dataInit, ... }\n        // this ==> scope (in observable.js's scopedEval) ==> this.parentElement ==> div.container below (toHtml)\n\n        playground.call(data,\n                        this\n                        ,\n                        {\n    \"f\": _magiclineChart,\n    \"o\": {\"x\":\"hours\",\"y\":\"count\",\"width\":600,\"height\":400}\n  }\n  \n                        \n                        \n                      );\n      }\n    );/*]]>*/</script>\n    <div>\n      <span class=\"chart-total-item-count\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anon472ed10d68cac18bf58f9b2b61b19765&quot;,&quot;initialValue&quot;:&quot;67&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p> entries total</span>\n      <span class=\"chart-sampling-warning\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anonb302bf9ab69346f12f319dbf677b64b2&quot;,&quot;initialValue&quot;:&quot;&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p></span>\n      <div>\n      </div>\n    </div></div>\n            </div><div class=\"tab-pane\" id=\"tab978061653-3\">\n            <div>\n      <script data-this=\"{&quot;dataId&quot;:&quot;anon7fabd0ffe732a93dc98aae9bb30c421e&quot;,&quot;dataInit&quot;:[{&quot;hours&quot;:2,&quot;count&quot;:1053},{&quot;hours&quot;:3,&quot;count&quot;:279},{&quot;hours&quot;:4,&quot;count&quot;:222},{&quot;hours&quot;:5,&quot;count&quot;:146},{&quot;hours&quot;:6,&quot;count&quot;:191},{&quot;hours&quot;:7,&quot;count&quot;:208},{&quot;hours&quot;:8,&quot;count&quot;:170},{&quot;hours&quot;:9,&quot;count&quot;:162},{&quot;hours&quot;:10,&quot;count&quot;:155},{&quot;hours&quot;:11,&quot;count&quot;:121},{&quot;hours&quot;:12,&quot;count&quot;:113},{&quot;hours&quot;:13,&quot;count&quot;:120},{&quot;hours&quot;:14,&quot;count&quot;:123},{&quot;hours&quot;:15,&quot;count&quot;:171},{&quot;hours&quot;:16,&quot;count&quot;:195},{&quot;hours&quot;:17,&quot;count&quot;:161},{&quot;hours&quot;:18,&quot;count&quot;:95},{&quot;hours&quot;:19,&quot;count&quot;:57},{&quot;hours&quot;:20,&quot;count&quot;:44},{&quot;hours&quot;:21,&quot;count&quot;:97},{&quot;hours&quot;:22,&quot;count&quot;:277},{&quot;hours&quot;:23,&quot;count&quot;:7244},{&quot;hours&quot;:24,&quot;count&quot;:2},{&quot;hours&quot;:26,&quot;count&quot;:1},{&quot;hours&quot;:29,&quot;count&quot;:1},{&quot;hours&quot;:46,&quot;count&quot;:1},{&quot;hours&quot;:54,&quot;count&quot;:1},{&quot;hours&quot;:92,&quot;count&quot;:1},{&quot;hours&quot;:112,&quot;count&quot;:1},{&quot;hours&quot;:159,&quot;count&quot;:1},{&quot;hours&quot;:168,&quot;count&quot;:1},{&quot;hours&quot;:212,&quot;count&quot;:1},{&quot;hours&quot;:230,&quot;count&quot;:5},{&quot;hours&quot;:231,&quot;count&quot;:3},{&quot;hours&quot;:232,&quot;count&quot;:4},{&quot;hours&quot;:233,&quot;count&quot;:2},{&quot;hours&quot;:234,&quot;count&quot;:2},{&quot;hours&quot;:235,&quot;count&quot;:1},{&quot;hours&quot;:236,&quot;count&quot;:2},{&quot;hours&quot;:237,&quot;count&quot;:3},{&quot;hours&quot;:238,&quot;count&quot;:3},{&quot;hours&quot;:283,&quot;count&quot;:1},{&quot;hours&quot;:304,&quot;count&quot;:1},{&quot;hours&quot;:396,&quot;count&quot;:1},{&quot;hours&quot;:403,&quot;count&quot;:1},{&quot;hours&quot;:420,&quot;count&quot;:1},{&quot;hours&quot;:422,&quot;count&quot;:1},{&quot;hours&quot;:432,&quot;count&quot;:1},{&quot;hours&quot;:479,&quot;count&quot;:1},{&quot;hours&quot;:480,&quot;count&quot;:1},{&quot;hours&quot;:499,&quot;count&quot;:1},{&quot;hours&quot;:502,&quot;count&quot;:2},{&quot;hours&quot;:503,&quot;count&quot;:2},{&quot;hours&quot;:509,&quot;count&quot;:1},{&quot;hours&quot;:751,&quot;count&quot;:1},{&quot;hours&quot;:1333,&quot;count&quot;:1},{&quot;hours&quot;:1415,&quot;count&quot;:2},{&quot;hours&quot;:1416,&quot;count&quot;:1},{&quot;hours&quot;:4486,&quot;count&quot;:3},{&quot;hours&quot;:4487,&quot;count&quot;:3},{&quot;hours&quot;:4506,&quot;count&quot;:1},{&quot;hours&quot;:9119,&quot;count&quot;:3},{&quot;hours&quot;:9120,&quot;count&quot;:2},{&quot;hours&quot;:9121,&quot;count&quot;:2},{&quot;hours&quot;:9140,&quot;count&quot;:3},{&quot;hours&quot;:9141,&quot;count&quot;:4},{&quot;hours&quot;:9142,&quot;count&quot;:2}],&quot;genId&quot;:&quot;822124215&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/req(['../javascripts/notebook/playground','../javascripts/notebook/magic/barChart'], \n      function(playground, _magicbarChart) {\n        // data ==> data-this (in observable.js's scopedEval) ==> this in JS => { dataId, dataInit, ... }\n        // this ==> scope (in observable.js's scopedEval) ==> this.parentElement ==> div.container below (toHtml)\n\n        playground.call(data,\n                        this\n                        ,\n                        {\n    \"f\": _magicbarChart,\n    \"o\": {\"x\":\"hours\",\"y\":\"count\",\"width\":600,\"height\":400}\n  }\n  \n                        \n                        \n                      );\n      }\n    );/*]]>*/</script>\n    <div>\n      <span class=\"chart-total-item-count\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anon97ad543ddb5ee0b6aff2c9c9d6ed7bf7&quot;,&quot;initialValue&quot;:&quot;67&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p> entries total</span>\n      <span class=\"chart-sampling-warning\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anonaf4de2f3216a3ef34355bed3686b0ef7&quot;,&quot;initialValue&quot;:&quot;&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p></span>\n      <div>\n      </div>\n    </div></div>\n            </div><div class=\"tab-pane\" id=\"tab978061653-4\">\n            <div>\n      <script data-this=\"{&quot;dataId&quot;:&quot;anonbb86592ccc8b3b16ccae0bad111625ca&quot;,&quot;dataInit&quot;:[{&quot;hours&quot;:2,&quot;count&quot;:1053},{&quot;hours&quot;:3,&quot;count&quot;:279},{&quot;hours&quot;:4,&quot;count&quot;:222},{&quot;hours&quot;:5,&quot;count&quot;:146},{&quot;hours&quot;:6,&quot;count&quot;:191},{&quot;hours&quot;:7,&quot;count&quot;:208},{&quot;hours&quot;:8,&quot;count&quot;:170},{&quot;hours&quot;:9,&quot;count&quot;:162},{&quot;hours&quot;:10,&quot;count&quot;:155},{&quot;hours&quot;:11,&quot;count&quot;:121},{&quot;hours&quot;:12,&quot;count&quot;:113},{&quot;hours&quot;:13,&quot;count&quot;:120},{&quot;hours&quot;:14,&quot;count&quot;:123},{&quot;hours&quot;:15,&quot;count&quot;:171},{&quot;hours&quot;:16,&quot;count&quot;:195},{&quot;hours&quot;:17,&quot;count&quot;:161},{&quot;hours&quot;:18,&quot;count&quot;:95},{&quot;hours&quot;:19,&quot;count&quot;:57},{&quot;hours&quot;:20,&quot;count&quot;:44},{&quot;hours&quot;:21,&quot;count&quot;:97},{&quot;hours&quot;:22,&quot;count&quot;:277},{&quot;hours&quot;:23,&quot;count&quot;:7244},{&quot;hours&quot;:24,&quot;count&quot;:2},{&quot;hours&quot;:26,&quot;count&quot;:1},{&quot;hours&quot;:29,&quot;count&quot;:1},{&quot;hours&quot;:46,&quot;count&quot;:1},{&quot;hours&quot;:54,&quot;count&quot;:1},{&quot;hours&quot;:92,&quot;count&quot;:1},{&quot;hours&quot;:112,&quot;count&quot;:1},{&quot;hours&quot;:159,&quot;count&quot;:1},{&quot;hours&quot;:168,&quot;count&quot;:1},{&quot;hours&quot;:212,&quot;count&quot;:1},{&quot;hours&quot;:230,&quot;count&quot;:5},{&quot;hours&quot;:231,&quot;count&quot;:3},{&quot;hours&quot;:232,&quot;count&quot;:4},{&quot;hours&quot;:233,&quot;count&quot;:2},{&quot;hours&quot;:234,&quot;count&quot;:2},{&quot;hours&quot;:235,&quot;count&quot;:1},{&quot;hours&quot;:236,&quot;count&quot;:2},{&quot;hours&quot;:237,&quot;count&quot;:3},{&quot;hours&quot;:238,&quot;count&quot;:3},{&quot;hours&quot;:283,&quot;count&quot;:1},{&quot;hours&quot;:304,&quot;count&quot;:1},{&quot;hours&quot;:396,&quot;count&quot;:1},{&quot;hours&quot;:403,&quot;count&quot;:1},{&quot;hours&quot;:420,&quot;count&quot;:1},{&quot;hours&quot;:422,&quot;count&quot;:1},{&quot;hours&quot;:432,&quot;count&quot;:1},{&quot;hours&quot;:479,&quot;count&quot;:1},{&quot;hours&quot;:480,&quot;count&quot;:1},{&quot;hours&quot;:499,&quot;count&quot;:1},{&quot;hours&quot;:502,&quot;count&quot;:2},{&quot;hours&quot;:503,&quot;count&quot;:2},{&quot;hours&quot;:509,&quot;count&quot;:1},{&quot;hours&quot;:751,&quot;count&quot;:1},{&quot;hours&quot;:1333,&quot;count&quot;:1},{&quot;hours&quot;:1415,&quot;count&quot;:2},{&quot;hours&quot;:1416,&quot;count&quot;:1},{&quot;hours&quot;:4486,&quot;count&quot;:3},{&quot;hours&quot;:4487,&quot;count&quot;:3},{&quot;hours&quot;:4506,&quot;count&quot;:1},{&quot;hours&quot;:9119,&quot;count&quot;:3},{&quot;hours&quot;:9120,&quot;count&quot;:2},{&quot;hours&quot;:9121,&quot;count&quot;:2},{&quot;hours&quot;:9140,&quot;count&quot;:3},{&quot;hours&quot;:9141,&quot;count&quot;:4},{&quot;hours&quot;:9142,&quot;count&quot;:2}],&quot;genId&quot;:&quot;1164902409&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/req(['../javascripts/notebook/playground','../javascripts/notebook/magic/pivotChart'], \n      function(playground, _magicpivotChart) {\n        // data ==> data-this (in observable.js's scopedEval) ==> this in JS => { dataId, dataInit, ... }\n        // this ==> scope (in observable.js's scopedEval) ==> this.parentElement ==> div.container below (toHtml)\n\n        playground.call(data,\n                        this\n                        ,\n                        {\n    \"f\": _magicpivotChart,\n    \"o\": {\"width\":600,\"height\":400,\"derivedAttributes\":{},\"extraOptions\":{}}\n  }\n  \n                        \n                        \n                      );\n      }\n    );/*]]>*/</script>\n    <div>\n      <span class=\"chart-total-item-count\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anonad8d68478da4b660d9e6c6862baeb303&quot;,&quot;initialValue&quot;:&quot;67&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p> entries total</span>\n      <span class=\"chart-sampling-warning\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anon887c85aa27d6d215dc970bac74869549&quot;,&quot;initialValue&quot;:&quot;&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p></span>\n      <div>\n      </div>\n    </div></div>\n            </div></div>\n      </div>\n    </div></div>"
+      },
+      "output_type" : "execute_result",
+      "execution_count" : 20,
+      "time" : "Took: 11 seconds 157 milliseconds, at 2017-7-23 0:10"
+    } ]
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "output_stream_collapsed" : true,
+      "collapsed" : false,
+      "presentation" : {
+        "tabs_state" : "{\n  \"tab_id\": \"#tab167422841-0\"\n}",
+        "pivot_chart_state" : "{\n  \"hiddenAttributes\": [],\n  \"menuLimit\": 200,\n  \"cols\": [],\n  \"rows\": [],\n  \"vals\": [],\n  \"exclusions\": {},\n  \"inclusions\": {},\n  \"unusedAttrsVertical\": 85,\n  \"autoSortUnusedAttrs\": false,\n  \"inclusionsInfo\": {},\n  \"aggregatorName\": \"Count\",\n  \"rendererName\": \"Table\"\n}"
+      },
+      "id" : "E3D9EAF54ED2489C841A862FC0700C5A"
+    },
+    "cell_type" : "code",
+    "source" : "taxiGood.\n  groupBy(hoursUDF($\"pickupTime\", $\"dropoffTime\").as(\"hours\")).\n  count().\n  where($\"hours\" < 0).\n  sort(\"hours\").\n  collect()",
+    "outputs" : [ {
+      "name" : "stdout",
+      "output_type" : "stream",
+      "text" : "res29: Array[org.apache.spark.sql.Row] = Array([-20,2], [-16,2], [-3,1], [-1,292])\n"
+    }, {
+      "metadata" : { },
+      "data" : {
+        "text/html" : "<div>\n      <script data-this=\"{&quot;dataId&quot;:&quot;anon5757541a9237e578a9ed05496fd3ea7d&quot;,&quot;dataInit&quot;:[],&quot;genId&quot;:&quot;167422841&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/req(['../javascripts/notebook/playground','../javascripts/notebook/magic/tabs'], \n      function(playground, _magictabs) {\n        // data ==> data-this (in observable.js's scopedEval) ==> this in JS => { dataId, dataInit, ... }\n        // this ==> scope (in observable.js's scopedEval) ==> this.parentElement ==> div.container below (toHtml)\n\n        playground.call(data,\n                        this\n                        ,\n                        {\n    \"f\": _magictabs,\n    \"o\": {}\n  }\n  \n                        \n                        \n                      );\n      }\n    );/*]]>*/</script>\n    <div>\n      <div>\n        <ul class=\"nav nav-tabs\" id=\"ul167422841\"><li>\n              <a href=\"#tab167422841-0\"><i class=\"fa fa-table\"/></a>\n            </li><li>\n              <a href=\"#tab167422841-1\"><i class=\"fa fa-dot-circle-o\"/></a>\n            </li><li>\n              <a href=\"#tab167422841-2\"><i class=\"fa fa-line-chart\"/></a>\n            </li><li>\n              <a href=\"#tab167422841-3\"><i class=\"fa fa-bar-chart\"/></a>\n            </li><li>\n              <a href=\"#tab167422841-4\"><i class=\"fa fa-cubes\"/></a>\n            </li></ul>\n\n        <div class=\"tab-content\" id=\"tab167422841\"><div class=\"tab-pane\" id=\"tab167422841-0\">\n            <div>\n      <script data-this=\"{&quot;dataId&quot;:&quot;anon706caf3c4914a08ed8b3c4f6ed470b25&quot;,&quot;dataInit&quot;:[{&quot;hours&quot;:-20,&quot;count&quot;:2},{&quot;hours&quot;:-16,&quot;count&quot;:2},{&quot;hours&quot;:-3,&quot;count&quot;:1},{&quot;hours&quot;:-1,&quot;count&quot;:292}],&quot;genId&quot;:&quot;1568088658&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/req(['../javascripts/notebook/playground','../javascripts/notebook/magic/tableChart'], \n      function(playground, _magictableChart) {\n        // data ==> data-this (in observable.js's scopedEval) ==> this in JS => { dataId, dataInit, ... }\n        // this ==> scope (in observable.js's scopedEval) ==> this.parentElement ==> div.container below (toHtml)\n\n        playground.call(data,\n                        this\n                        ,\n                        {\n    \"f\": _magictableChart,\n    \"o\": {\"headers\":[\"hours\",\"count\"],\"width\":600,\"height\":400}\n  }\n  \n                        \n                        \n                      );\n      }\n    );/*]]>*/</script>\n    <div>\n      <span class=\"chart-total-item-count\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anone7e9fe27142a0f950d1187ad955a11c1&quot;,&quot;initialValue&quot;:&quot;4&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p> entries total</span>\n      <span class=\"chart-sampling-warning\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anonb26e82aff0e6bd741bec36bdc4596115&quot;,&quot;initialValue&quot;:&quot;&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p></span>\n      <div>\n      </div>\n    </div></div>\n            </div><div class=\"tab-pane\" id=\"tab167422841-1\">\n            <div>\n      <script data-this=\"{&quot;dataId&quot;:&quot;anonbd13424becb4eaf2d68e6ba92279e451&quot;,&quot;dataInit&quot;:[{&quot;hours&quot;:-20,&quot;count&quot;:2},{&quot;hours&quot;:-16,&quot;count&quot;:2},{&quot;hours&quot;:-3,&quot;count&quot;:1},{&quot;hours&quot;:-1,&quot;count&quot;:292}],&quot;genId&quot;:&quot;345198434&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/req(['../javascripts/notebook/playground','../javascripts/notebook/magic/scatterChart'], \n      function(playground, _magicscatterChart) {\n        // data ==> data-this (in observable.js's scopedEval) ==> this in JS => { dataId, dataInit, ... }\n        // this ==> scope (in observable.js's scopedEval) ==> this.parentElement ==> div.container below (toHtml)\n\n        playground.call(data,\n                        this\n                        ,\n                        {\n    \"f\": _magicscatterChart,\n    \"o\": {\"x\":\"hours\",\"y\":\"count\",\"width\":600,\"height\":400}\n  }\n  \n                        \n                        \n                      );\n      }\n    );/*]]>*/</script>\n    <div>\n      <span class=\"chart-total-item-count\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anon9c3c2cfdfe6024a7ae36370acd1fc71f&quot;,&quot;initialValue&quot;:&quot;4&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p> entries total</span>\n      <span class=\"chart-sampling-warning\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anonf7d02ef201c6692f6b819abc92857e48&quot;,&quot;initialValue&quot;:&quot;&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p></span>\n      <div>\n      </div>\n    </div></div>\n            </div><div class=\"tab-pane\" id=\"tab167422841-2\">\n            <div>\n      <script data-this=\"{&quot;dataId&quot;:&quot;anon502dbc982af27f373a6d3a5091dd967d&quot;,&quot;dataInit&quot;:[{&quot;hours&quot;:-20,&quot;count&quot;:2},{&quot;hours&quot;:-16,&quot;count&quot;:2},{&quot;hours&quot;:-3,&quot;count&quot;:1},{&quot;hours&quot;:-1,&quot;count&quot;:292}],&quot;genId&quot;:&quot;2049884033&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/req(['../javascripts/notebook/playground','../javascripts/notebook/magic/lineChart'], \n      function(playground, _magiclineChart) {\n        // data ==> data-this (in observable.js's scopedEval) ==> this in JS => { dataId, dataInit, ... }\n        // this ==> scope (in observable.js's scopedEval) ==> this.parentElement ==> div.container below (toHtml)\n\n        playground.call(data,\n                        this\n                        ,\n                        {\n    \"f\": _magiclineChart,\n    \"o\": {\"x\":\"hours\",\"y\":\"count\",\"width\":600,\"height\":400}\n  }\n  \n                        \n                        \n                      );\n      }\n    );/*]]>*/</script>\n    <div>\n      <span class=\"chart-total-item-count\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anon91f2d6e32501d183751c3a65ae0f66aa&quot;,&quot;initialValue&quot;:&quot;4&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p> entries total</span>\n      <span class=\"chart-sampling-warning\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anon0b82a5275fb9fc7b007a258b4cc58d93&quot;,&quot;initialValue&quot;:&quot;&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p></span>\n      <div>\n      </div>\n    </div></div>\n            </div><div class=\"tab-pane\" id=\"tab167422841-3\">\n            <div>\n      <script data-this=\"{&quot;dataId&quot;:&quot;anon97f960070ce6738a2cbdc7d25b1d621e&quot;,&quot;dataInit&quot;:[{&quot;hours&quot;:-20,&quot;count&quot;:2},{&quot;hours&quot;:-16,&quot;count&quot;:2},{&quot;hours&quot;:-3,&quot;count&quot;:1},{&quot;hours&quot;:-1,&quot;count&quot;:292}],&quot;genId&quot;:&quot;2063846154&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/req(['../javascripts/notebook/playground','../javascripts/notebook/magic/barChart'], \n      function(playground, _magicbarChart) {\n        // data ==> data-this (in observable.js's scopedEval) ==> this in JS => { dataId, dataInit, ... }\n        // this ==> scope (in observable.js's scopedEval) ==> this.parentElement ==> div.container below (toHtml)\n\n        playground.call(data,\n                        this\n                        ,\n                        {\n    \"f\": _magicbarChart,\n    \"o\": {\"x\":\"hours\",\"y\":\"count\",\"width\":600,\"height\":400}\n  }\n  \n                        \n                        \n                      );\n      }\n    );/*]]>*/</script>\n    <div>\n      <span class=\"chart-total-item-count\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anonec2f7117e83f6bc6e8fe2f25401a1347&quot;,&quot;initialValue&quot;:&quot;4&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p> entries total</span>\n      <span class=\"chart-sampling-warning\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anoncc4cd252383a095666d05cbc6ac7bf43&quot;,&quot;initialValue&quot;:&quot;&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p></span>\n      <div>\n      </div>\n    </div></div>\n            </div><div class=\"tab-pane\" id=\"tab167422841-4\">\n            <div>\n      <script data-this=\"{&quot;dataId&quot;:&quot;anona93d4a27ca8d203cb30b7abb0eb84bb9&quot;,&quot;dataInit&quot;:[{&quot;hours&quot;:-20,&quot;count&quot;:2},{&quot;hours&quot;:-16,&quot;count&quot;:2},{&quot;hours&quot;:-3,&quot;count&quot;:1},{&quot;hours&quot;:-1,&quot;count&quot;:292}],&quot;genId&quot;:&quot;1039158145&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/req(['../javascripts/notebook/playground','../javascripts/notebook/magic/pivotChart'], \n      function(playground, _magicpivotChart) {\n        // data ==> data-this (in observable.js's scopedEval) ==> this in JS => { dataId, dataInit, ... }\n        // this ==> scope (in observable.js's scopedEval) ==> this.parentElement ==> div.container below (toHtml)\n\n        playground.call(data,\n                        this\n                        ,\n                        {\n    \"f\": _magicpivotChart,\n    \"o\": {\"width\":600,\"height\":400,\"derivedAttributes\":{},\"extraOptions\":{}}\n  }\n  \n                        \n                        \n                      );\n      }\n    );/*]]>*/</script>\n    <div>\n      <span class=\"chart-total-item-count\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anon4731d8e0b35bdf28275e9c063509036c&quot;,&quot;initialValue&quot;:&quot;4&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p> entries total</span>\n      <span class=\"chart-sampling-warning\"><p data-bind=\"text: value\"><script data-this=\"{&quot;valueId&quot;:&quot;anon40de5d4b2e0c8ff3a04402f2b9ce823b&quot;,&quot;initialValue&quot;:&quot;&quot;}\" type=\"text/x-scoped-javascript\">/*<![CDATA[*/\nreq(\n['observable', 'knockout'],\nfunction (O, ko) {\n  ko.applyBindings({\n      value: O.makeObservable(valueId, initialValue)\n    },\n    this\n  );\n});\n        /*]]>*/</script></p></span>\n      <div>\n      </div>\n    </div></div>\n            </div></div>\n      </div>\n    </div></div>"
+      },
+      "output_type" : "execute_result",
+      "execution_count" : 21,
+      "time" : "Took: 7 seconds 855 milliseconds, at 2017-7-23 0:10"
+    } ]
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false,
+      "presentation" : {
+        "tabs_state" : "{\n  \"tab_id\": \"#tab677997397-0\"\n}",
+        "pivot_chart_state" : "{\n  \"hiddenAttributes\": [],\n  \"menuLimit\": 200,\n  \"cols\": [],\n  \"rows\": [],\n  \"vals\": [],\n  \"exclusions\": {},\n  \"inclusions\": {},\n  \"unusedAttrsVertical\": 85,\n  \"autoSortUnusedAttrs\": false,\n  \"inclusionsInfo\": {},\n  \"aggregatorName\": \"Count\",\n  \"rendererName\": \"Table Barchart\"\n}"
+      },
+      "id" : "9309BFE02F4A4CF5A167342D5284AE5B"
+    },
+    "cell_type" : "code",
+    "source" : "taxiGood.\n  map(trip => Tuple2(hours(trip.pickupTime, trip.dropoffTime), trip.totalAmount)).\n  collect()",
+    "outputs" : [ ]
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : false,
+      "presentation" : {
+        "tabs_state" : "{\n  \"tab_id\": \"#tab1937745183-0\"\n}",
+        "pivot_chart_state" : "{\n  \"hiddenAttributes\": [],\n  \"menuLimit\": 200,\n  \"cols\": [],\n  \"rows\": [],\n  \"vals\": [],\n  \"exclusions\": {},\n  \"inclusions\": {},\n  \"unusedAttrsVertical\": 85,\n  \"autoSortUnusedAttrs\": false,\n  \"inclusionsInfo\": {},\n  \"aggregatorName\": \"Count\",\n  \"rendererName\": \"Table\"\n}"
+      },
+      "id" : "75E3CFFBEA5140668E941B683C36B132"
+    },
+    "cell_type" : "code",
+    "source" : "taxiGood.take(4)",
+    "outputs" : [ ]
+  }, {
+    "metadata" : {
+      "trusted" : true,
+      "input_collapsed" : false,
+      "collapsed" : true,
+      "id" : "52801167E97640418C7F7B97B53EB186"
+    },
+    "cell_type" : "code",
+    "source" : "",
+    "outputs" : [ ]
+  } ],
+  "nbformat" : 4
+}

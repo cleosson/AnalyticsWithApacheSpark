@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Geospatial and Temporal Data Analysis on New York Taxi Trip Data</title>
+    <style>
+      body, html { margin:0; padding:0; height:100%;}
+      body { font-family:sans-serif; }
+      body * { font-weight:200;}
+      h1 { position:absolute; background:white; padding:10px;}
+      #mapId { height:100%; width:99% }
+      .leaflet-container {
+        background: rgba(0,0,0,.8) !important;
+      }
+      .loader {
+        position: absolute;
+        left: 40%;
+        top: 50%;
+        border: 16px solid #f3f3f3;
+        border-radius: 50%;
+        border-top: 16px solid #3498db;
+        width: 300px;
+        height: 300px;
+        -webkit-animation: spin 2s linear infinite;
+        animation: spin 2s linear infinite;
+      }
+
+      @-webkit-keyframes spin {
+        0% { -webkit-transform: rotate(0deg); }
+        100% { -webkit-transform: rotate(360deg); }
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+    </style>
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
+    <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link href="/css/bootstrap-datetimepicker.min.css" rel="stylesheet" media="screen">
+  </head>
+  <body>
+    <br/>
+
+    <div class="container">
+      <p style="margin-left:15px;font-size:36px;">Geospatial and Temporal Data Analysis on New York Taxi Trip Data</p>
+
+			<div class="form-group">
+        <label for="dtp_input2" class="col-md-2 control-label">Date</label>
+        <div class="input-group date form_date col-md-5" data-date="2015-01-01" data-date-format="dd MM yyyy Z" data-link-field="dtp_input2" data-link-format="yyyy-mm-dd" style="width: 470px;">
+          <input id="dateId" class="form-control" size="18" type="text" value="" readonly>
+          <span class="input-group-addon"><span class="glyphicon glyphicon-remove"></span></span>
+          <span class="input-group-addon"><span class="glyphicon glyphicon-calendar"></span></span>
+          <button id='loadDataId' style="margin-left: 10px; width: 150px;">Load data</button>
+        </div>
+	  		<input type="hidden" id="dtp_input2" value=""/><br/>
+        
+      </div>
+			
+      <div class="form-group">
+        <label for="dtp_input3" class="col-md-2 control-label">Start Time</label>
+        <div class="input-group date form_time col-md-5" data-date="" data-date-format="hh:ii" data-link-field="dtp_input3" data-link-format="hh:ii" style="width: 470px;">
+          <input id="startTimeId" class="form-control" size="18" type="text" value="" readonly>
+          <span class="input-group-addon"><span class="glyphicon glyphicon-remove"></span></span>
+					<span class="input-group-addon"><span class="glyphicon glyphicon-time"></span></span>
+          <button id='refreshMapId' disabled style="margin-left: 10px; width: 150px;">Refresh map</button>
+        </div>
+				<input type="hidden" id="dtp_input3" value="" /><br/>
+      </div>
+
+      <div class="form-group">
+        <label for="dtp_input3" class="col-md-2 control-label">End Time</label>
+        <div class="input-group date form_time col-md-5" data-date="" data-date-format="hh:ii" data-link-field="dtp_input3" data-link-format="hh:ii" style="width: 470px;">
+          <input id="endTimeId" class="form-control" size="18" type="text" value="" readonly>
+          <span class="input-group-addon"><span class="glyphicon glyphicon-remove"></span></span>
+					<span class="input-group-addon"><span class="glyphicon glyphicon-time"></span></span>
+          <select id="selectorId" style="margin-left: 10px; width: 150px;">
+            <option value="pickup">Pick up</option>
+            <option value="dropoff">Drop off</option>
+          </select>
+        </div>
+				<input type="hidden" id="dtp_input3" value="" /><br/>
+      </div>
+
+    </div>
+
+    <br/>
+    <div id="mapId"></div>
+    <div id="loaderId" class="loader" style="display: none;"></div>
+
+    <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+    <script src="/build/heatmap.js"></script>
+    <script src="/plugins/leaflet-heatmap/leaflet-heatmap.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js" ></script>
+    <!--<script src="/jquery/jquery-1.8.3.min.js" charset="UTF-8"></script>-->
+    <script src="/bootstrap/js/bootstrap.min.js"></script>
+    <script src="/js/bootstrap-datetimepicker.js" charset="UTF-8"></script>
+    <script src="/js/locales/bootstrap-datetimepicker.fr.js" charset="UTF-8"></script>
+    <script>
+      var heatmapLayer
+
+      window.onload = function() {
+        var baseLayer = L.tileLayer(
+          'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+            attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://cloudmade.com">CloudMade</a>',
+            maxZoom: 18
+          }
+        );
+
+        var cfg = {
+          // radius should be small ONLY if scaleRadius is true (or small radius is intended)
+          "radius": .0004,
+          "maxOpacity": .6, 
+          // scales the radius based on map zoom
+          "scaleRadius": true, 
+          // if set to false the heatmap uses the global maximum for colorization
+          // if activated: uses the data maximum within the current map boundaries 
+          //   (there will always be a red spot with useLocalExtremas true)
+          "useLocalExtrema": true,
+          // which field name in your data represents the latitude - default "lat"
+          latField: 'lt',
+          // which field name in your data represents the longitude - default "lng"
+          lngField: 'ln',
+          // which field name in your data represents the data value - default "value"
+          valueField: 'ct'
+        };
+
+
+        heatmapLayer = new HeatmapOverlay(cfg);
+
+        var map = new L.Map('mapId', {
+          center: new L.LatLng(40.7128, -74.0059),
+          zoom: 10,
+          layers: [baseLayer, heatmapLayer]
+        });
+      };
+
+      var myData;
+
+      document.getElementById("loadDataId").addEventListener("click", function(){
+        var startTime = document.getElementById('startTimeId');
+        var endTime = document.getElementById('endTimeId');
+        var date = document.getElementById('dateId');
+        var startTimeUnixTime;
+        var endTimeUnixTime;
+        var day;
+
+        // console.log("Merda");
+        // console.log(startTime.value);
+        // console.log(endTime.value);
+        // console.log(date.value);
+        if (startTime != null && endTime != null && date != null) {
+          startTimeUnixTime = new Date(startTime.value + " " + date.value).getTime();
+          endTimeUnixTime = new Date(endTime.value + " " + date.value).getTime();
+          day = date.value.substring(0,2);
+          console.log(startTimeUnixTime);
+          console.log(endTimeUnixTime);
+          console.log(day);
+
+        }
+
+        document.getElementById("loaderId").style.display = 'block'; 
+        document.getElementById("mapId").style.display = 'none'; 
+
+        var pickupDropoff = document.getElementById("selectorId").value; 
+        if (pickupDropoff == "pickup") {
+          var session = "sessionsPickup/"
+        } else {
+          var session = "sessionsDropoff/"
+        }
+
+        console.log('http://0.0.0.0:1337/tmp/' + session + day + ".json")
+        $.ajax({
+            dataType: "json",
+            url: 'http://0.0.0.0:1337/tmp/' + session + day + ".json",
+            type: 'GET',
+            success: function(data){ 
+              document.getElementById('refreshMapId').disabled = false;
+              if (startTimeUnixTime != null && endTimeUnixTime != null) {
+                myData = data.filter(({ts}) => ts >=  startTimeUnixTime && ts <= endTimeUnixTime);
+              } else {
+                myData = data;
+              }
+
+              console.log(myData);
+
+              document.getElementById("loaderId").style.display = 'none'; 
+              document.getElementById("mapId").style.display = 'block'; 
+
+            },
+            error: function(data) {
+              console.log("FAIL");
+              alert('woops!');
+
+              document.getElementById("loaderId").style.display = 'none'; 
+              document.getElementById("mapId").style.display = 'block'; 
+            }
+        });
+      });
+      
+      document.getElementById("refreshMapId").addEventListener("click", function(){
+        document.getElementById("loaderId").style.display = 'block'; 
+        document.getElementById("mapId").style.display = 'none'; 
+
+        var testData = {
+          max: 1,
+          data: myData
+        };
+
+        heatmapLayer.setData(testData);
+
+        document.getElementById("loaderId").style.display = 'none'; 
+        document.getElementById("mapId").style.display = 'block'; 
+      });
+
+      $('.form_date').datetimepicker({
+        weekStart: 1,
+        todayBtn:  1,
+        autoclose: 1,
+        todayHighlight: 1,
+        startView: 2,
+        minView: 2,
+        forceParse: 0
+      });
+      $('.form_time').datetimepicker({
+        weekStart: 1,
+        todayBtn:  1,
+        autoclose: 1,
+        todayHighlight: 1,
+        startView: 1,
+        minView: 0,
+        maxView: 1,
+        forceParse: 0
+      });
+    </script>
+  </body>
+</html>
