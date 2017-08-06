@@ -170,10 +170,10 @@
           var session = "sessionsDropoff/"
         }
 
-        console.log('http://0.0.0.0:1337/tmp/' + session + day + ".json")
+        console.log('http://0.0.0.0:1337/data/' + session + day + ".json")
         $.ajax({
             dataType: "json",
-            url: 'http://0.0.0.0:1337/tmp/' + session + day + ".json",
+            url: 'http://0.0.0.0:1337/data/' + session + day + ".json",
             type: 'GET',
             success: function(data){ 
               document.getElementById('refreshMapId').disabled = false;
