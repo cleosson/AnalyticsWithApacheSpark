@@ -13,7 +13,7 @@
 
 ```
 export AAS_DATA_PATH=<path to the data directory>
-export AAS_CSV_FILE=<name of csv file>
+export AAS_CSV_FILE_PATH=<path to csv file>
 ```
 
 ### Runing using Apache Spark
@@ -35,12 +35,6 @@ Go to http://0.0.0.0:9001/
 Import the notebook from **"spark-notebook/Geospatial and Temporal Data Analysis on New York Taxi Trip Data.snb"**
 Double click the notebook and run all the cells
 
-### Preparing the data to visualize
- Create the files to be loaded by
-```
-python tools/toJson.py data/sessionsPickup/
-python tools/toJson.py data/sessionsDropoff/
-```
 
 ### Visualize the data
  Go to www directory and run any http server, for example from Python
