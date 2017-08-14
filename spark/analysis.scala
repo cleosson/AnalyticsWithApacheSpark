@@ -3,7 +3,7 @@
 val sparkSession = spark
 
 val path = sys.env("AAS_DATA_PATH")
-val csvPath = path + sys.env("AAS_CSV_FILE")
+val csvPath = sys.env("AAS_CSV_FILE_PATH")
 
 val taxiRaw = sparkSession.read.option("header", "true").csv(csvPath)
 
@@ -215,4 +215,52 @@ var taxiCleanDropoff = taxiCleanXY.map(trip => Heatmap(Instant.ofEpochMilli(trip
 val sessionsDropoff = taxiCleanDropoff.repartition($"dy").sortWithinPartitions($"dy", $"ts")
 sessionsDropoff.write.json(path + "sessionsDropoff")
 
-                  
+/* ... new cell ... */
+
+import scala.io.Source
+import java.util.regex.Matcher
+import java.util.regex.Pattern
+import java.io.PrintWriter
+import java.io.File
+import java.io.FileOutputStream
+
+def writeOutputFile(file: File, folderPath: String) {
+    val source = Source.fromFile(file.getPath)
+
+    // filename is based on the day
+    // get it from first line
+    val lines = source.getLines()
+    if (lines.hasNext) {
+      var line = lines.next
+      val p = Pattern.compile("\\d+");
+      val m = p.matcher(line)
+      m.find
+      val day = m.group(0)
+
+      // create the file
+      val pw = new PrintWriter(new File(folderPath + "%02d".format(day.toInt) + ".json"))
+      pw.println("[")
+      pw.println(line)
+
+      lines.foreach ()
+        line => {
+          pw.println(",")
+          pw.println(line)
+        }
+      )
+      pw.println("]")
+      pw.close
+    }
+    source.close
+}
+
+
+val folderPath = path + "sessionsPickup/"
+val folder = new File(folderPath)
+val files = folder.listFiles
+files.filter(file => file.getName().startsWith("part-") && file.getName().endsWith(".json")).foreach(file => writeOutputFile(file, folderPath)) 
+
+val folderPath = path + "sessionsDropoff/"
+val folder = new File(folderPath)
+val files = folder.listFiles
+files.filter(file => file.getName().startsWith("part-") && file.getName().endsWith(".json")).foreach(file => writeOutputFile(file, folderPath)) 
